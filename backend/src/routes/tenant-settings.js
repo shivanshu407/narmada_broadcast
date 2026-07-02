@@ -17,6 +17,7 @@ import {
     weeklyDigest,
 } from '../services/botLearning.js';
 import { mergeSecretSettings, sanitizeBotSettingsForClient } from '../utils/settings-security.js';
+import { sanitizeProductDescriptionForCatalogue } from '../utils/productCatalogue.js';
 
 const router = Router();
 router.use(auth);
@@ -51,7 +52,7 @@ function settingToClient(setting) {
 }
 
 function productEmbeddingText(product) {
-    return [product.name, product.description, product.category, product.sku]
+    return [product.name, sanitizeProductDescriptionForCatalogue(product.description), product.category, product.sku]
         .filter(Boolean)
         .join(' ');
 }

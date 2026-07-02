@@ -484,7 +484,7 @@ test('Meta catalogue sync publishes imported products for WhatsApp visibility an
 
 test('Meta catalogue import preserves comma-grouped product prices', async () => {
   const productsRouteSource = readRepoFile('backend/src/routes/products.js');
-  const { parseMetaCataloguePrice } = await importFromBackend('src/routes/products.js');
+  const { parseMetaCataloguePrice } = await importFromBackend('src/utils/productCatalogue.js');
 
   assert.equal(parseMetaCataloguePrice('3,499.00 INR'), 3499);
   assert.equal(parseMetaCataloguePrice('INR 2,399.50'), 2399.5);
@@ -493,6 +493,39 @@ test('Meta catalogue import preserves comma-grouped product prices', async () =>
   assert.equal(parseMetaCataloguePrice(''), 0);
   assert.match(productsRouteSource, /parseMetaCataloguePrice\(item\.price\)/);
   assert.doesNotMatch(productsRouteSource, /item\.price\.match\(\/\\\[\\d\.\]\\+\/\)/);
+});
+
+test('Product catalogue publishing sends plain descriptions and normalized prices', async () => {
+  const productsRouteSource = readRepoFile('backend/src/routes/products.js');
+  const metaSyncSource = readRepoFile('backend/src/services/metaCatalogSync.js');
+  const webhookSource = readRepoFile('backend/src/routes/webhook.js');
+  const whatsappServiceSource = readRepoFile('backend/src/services/whatsapp.js');
+  const shopifySyncSource = readRepoFile('backend/src/services/shopifySync.js');
+  const {
+    formatMetaCataloguePrice,
+    productPriceAmount,
+    sanitizeProductDescriptionForCatalogue,
+  } = await importFromBackend('src/utils/productCatalogue.js');
+
+  assert.equal(
+    sanitizeProductDescriptionForCatalogue('<ul><li><b>product type:</b> premium automatic dispenser.</li><li><strong>material:</strong> white abs plastic.</li></ul>'),
+    'product type: premium automatic dispenser.\nmaterial: white abs plastic.'
+  );
+  assert.equal(
+    sanitizeProductDescriptionForCatalogue('Rose &amp; Jasmine&nbsp;Refill'),
+    'Rose & Jasmine Refill'
+  );
+  assert.equal(formatMetaCataloguePrice({ selling_price: '3,699', mrp: 0 }), '3699.00 INR');
+  assert.equal(productPriceAmount({ selling_price: 0, mrp: '52,499.00 INR' }), 52499);
+
+  assert.match(productsRouteSource, /sanitizeProductDescriptionForCatalogue\(item\.description/);
+  assert.match(productsRouteSource, /sanitizeProductDescriptionForCatalogue\(description/);
+  assert.match(metaSyncSource, /sanitizeProductDescriptionForCatalogue\(product\.description/);
+  assert.match(metaSyncSource, /formatMetaCataloguePrice\(product\)/);
+  assert.match(webhookSource, /sanitizeProductDescriptionForCatalogue\(product\.description/);
+  assert.match(webhookSource, /productPriceAmount\(product\)/);
+  assert.match(whatsappServiceSource, /sanitizeProductDescriptionForCatalogue\(product\.description/);
+  assert.match(shopifySyncSource, /sanitizeProductDescriptionForCatalogue\(product\.description/);
 });
 
 test('mobile app shell exposes an openable drawer and avoids misleading admin nav', () => {

@@ -16,6 +16,7 @@ same retailer/content ID that WhatsApp product messages use.
 | `frontend/src/components/Catalogue.jsx` | Product grid, add/edit/delete modal, image upload, Sync from Meta, Publish to WhatsApp. |
 | `backend/src/routes/products.js` | Product CRUD, image serving, Meta import, and bulk WhatsApp catalogue publishing routes. |
 | `backend/src/services/metaCatalogSync.js` | Low-level Meta `items_batch` upsert/delete helper used by the product routes. |
+| `backend/src/utils/productCatalogue.js` | Shared description sanitizer and price normalization helpers for imports, publishing, bot replies, and repair scripts. |
 | `backend/src/models/Product.js` | Local Mongo product document, including `sku`, `meta_product_id`, image URLs, prices, and inventory fields. |
 | `backend/src/models/Image.js` | Stores uploaded product image binary data in MongoDB so Meta crawlers can fetch stable image URLs on Vercel. |
 | `backend/src/routes/webhook.js` | Sends native WhatsApp single-product messages using `whatsapp_catalog_id` and `product.sku`. |
@@ -32,6 +33,12 @@ same retailer/content ID that WhatsApp product messages use.
   `items_batch` API and reports how many queued or failed.
 - Do not claim a publish succeeded only because the route looped through
   products. Use the result returned from `syncProductToMeta()`.
+- Product descriptions stored locally or sent to Meta must be plain text. Use
+  `sanitizeProductDescriptionForCatalogue()` for Meta imports, manual product
+  edits, Shopify imports, product bot captions, and embedding text.
+- Product prices sent to Meta must go through `formatMetaCataloguePrice()` or
+  `productPriceAmount()` so comma-grouped strings and stringified numbers do not
+  become tiny truncated amounts.
 - Keep product images publicly fetchable through
   `/api/v1/products/images/:filename`; Vercel temp files are not durable enough
   for Meta image crawlers.
@@ -54,9 +61,14 @@ same retailer/content ID that WhatsApp product messages use.
   Always normalize with `parseMetaCataloguePrice()` before saving to
   `Product.mrp` or `Product.selling_price`; using the first numeric regex
   fragment will save `3` instead of `3499`.
-- If bad prices were already imported before the parser fix, deploy the fix and
-  run `Sync from Meta` again so local Mongo product prices are overwritten from
-  Meta's current values.
+- If bad prices were already imported and republished into Meta before the
+  parser fix, `Sync from Meta` may only return the poisoned value (`3.00 INR`)
+  because Meta no longer has the original comma-grouped price. Repair the local
+  row from a trusted source, then run `Publish to WhatsApp` to overwrite Meta.
+- On 2026-07-02 the live Narmada rows were repaired from the public
+  `narmadaessence.com` MRP values: Automatic Dispenser `3699`, Mini Diffuser
+  `23099`, and Diffuser `52499`. All local product descriptions were cleaned
+  and `Publish to WhatsApp` queued 27 products with 0 failures.
 - Products can still fail Meta review or catalogue diagnostics outside this
   app. The API now surfaces first failure messages so operators are not left
   with a false success toast.
@@ -65,7 +77,8 @@ same retailer/content ID that WhatsApp product messages use.
 
 - `backend/test/regression.test.js` covers that Meta imports request
   `retailer_id`, preserve `meta_product_id`, queue imported products for
-  WhatsApp publishing, parse comma-grouped price strings correctly, report push
+  WhatsApp publishing, parse comma-grouped price strings correctly, strip HTML
+  descriptions before publishing/replies, normalize outbound prices, report push
   failures, and show the frontend action as `Publish to WhatsApp`.
 - Full local verification for this subsystem should include:
   - `cd backend && npm test`

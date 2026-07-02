@@ -6,6 +6,7 @@ import KnowledgeBase from '../models/KnowledgeBase.js';
 import Product from '../models/Product.js';
 import FaqPhrasing from '../models/FaqPhrasing.js';
 import { MATCH_THRESHOLD, flagEnabled } from '../config/botConfig.js';
+import { sanitizeProductDescriptionForCatalogue } from '../utils/productCatalogue.js';
 
 const LEGACY_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
 const TRANSFORMERS_CACHE_DIR = process.env.TRANSFORMERS_CACHE_DIR || path.join(os.tmpdir(), 'narmada-transformers-cache');
@@ -168,7 +169,7 @@ export async function getTenantKnowledge(tenantId, { force = false } = {}) {
         .map((p) => ({
             id: p._id.toString(),
             name: p.name,
-            description: p.description,
+            description: sanitizeProductDescriptionForCatalogue(p.description),
             mrp: p.mrp,
             selling_price: p.selling_price,
             category: p.category,

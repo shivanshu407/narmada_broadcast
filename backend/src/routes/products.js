@@ -9,6 +9,12 @@ import { getUploadsDir } from '../utils/uploads.js';
 import { syncProductToMeta, deleteProductFromMeta } from '../services/metaCatalogSync.js';
 import Setting from '../models/Setting.js';
 import Image from '../models/Image.js';
+import {
+    parseMetaCataloguePrice,
+    sanitizeProductDescriptionForCatalogue,
+} from '../utils/productCatalogue.js';
+
+export { parseMetaCataloguePrice } from '../utils/productCatalogue.js';
 
 const router = express.Router();
 const PRODUCT_UPLOAD_FIELD = 'images';
@@ -36,23 +42,6 @@ function summarizeMetaPublishResults(results) {
             error: result?.error || 'Unknown Meta sync error'
         }))
     };
-}
-
-export function parseMetaCataloguePrice(value) {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-
-    const priceText = String(value).trim();
-    if (!priceText) return 0;
-
-    const matches = priceText.match(/\d[\d,]*(?:\.\d+)?/g);
-    if (!matches) return 0;
-
-    for (const match of matches) {
-        const amount = Number(match.replace(/,/g, ''));
-        if (Number.isFinite(amount)) return amount;
-    }
-    return 0;
 }
 
 function runUpload(uploadMiddleware) {
@@ -173,13 +162,14 @@ router.post('/sync-meta', async (req, res) => {
             });
             
             const price = parseMetaCataloguePrice(item.price);
+            const description = sanitizeProductDescriptionForCatalogue(item.description);
 
             if (!product) {
                 product = new Product({
                     name: item.name || 'Untitled',
                     sku,
                     meta_product_id: item.id,
-                    description: item.description || '',
+                    description,
                     mrp: price,
                     selling_price: price,
                     image_url: item.image_url || '',
@@ -192,7 +182,7 @@ router.post('/sync-meta', async (req, res) => {
                 product.name = item.name || product.name;
                 product.sku = sku || product.sku;
                 product.meta_product_id = item.id || product.meta_product_id;
-                product.description = item.description || product.description;
+                product.description = description || product.description;
                 product.mrp = price || product.mrp;
                 product.selling_price = price || product.selling_price;
                 product.image_url = item.image_url || product.image_url;
@@ -265,6 +255,7 @@ router.post('/', async (req, res) => {
     try {
         let { name, description, mrp, selling_price, category, sku, image_url, images, available_for_sale, track_inventory, allow_backorder, quantity } = req.body;
         if (!name) return res.status(400).json({ error: 'Product name is required' });
+        description = sanitizeProductDescriptionForCatalogue(description);
 
         if (images && Array.isArray(images) && images.length > 0) {
             image_url = images[0];
@@ -310,6 +301,7 @@ router.put('/:id', async (req, res) => {
         let { name, description, mrp, selling_price, category, sku, image_url, images, available_for_sale, track_inventory, allow_backorder, quantity } = req.body;
 
         if (!name) return res.status(400).json({ error: 'Product name is required' });
+        description = sanitizeProductDescriptionForCatalogue(description);
 
         if (images && Array.isArray(images) && images.length > 0) {
             image_url = images[0];

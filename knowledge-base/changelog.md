@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-02 — Clean Catalogue Descriptions And Repair Live Prices
+**What**: Stripped product description HTML before storage/publishing and repaired the live Narmada product rows that still had comma-truncated prices.
+**Why**: Customer-side WhatsApp catalogue descriptions were showing raw `<ul><li><b>...` HTML, and the live Mongo/Meta data still contained prices such as `3`, `23`, and `52` from the earlier comma parser bug.
+**Impact**: Future Meta imports, manual product edits, Shopify imports, WhatsApp catalogue publishing, product bot captions, product-list Smart Flow replies, Smart Automation matching, and product re-embedding use clean plain text and normalized price helpers. Live data was repaired for 27 products and queued back to Meta with 0 failures.
+**Files Changed**: `backend/src/utils/productCatalogue.js`, `backend/src/routes/products.js`, `backend/src/services/metaCatalogSync.js`, `backend/src/services/whatsapp.js`, `backend/src/services/shopifySync.js`, `backend/src/routes/webhook.js`, `backend/src/services/smartFlows.js`, `backend/src/services/smartResponder.js`, `backend/src/routes/tenant-settings.js`, `backend/test/regression.test.js`, `knowledge-base/changelog.md`, `knowledge-base/known-issues.md`, `knowledge-base/catalogue.md`, `knowledge-base/testing.md`, `knowledge-base/active-context.md`
+**Tests**: PASS - watched new backend regression fail before implementation; PASS - focused backend regression; PASS - `cd backend && npm test` (31 tests); PASS - backend `node --check` sweep; PASS - `cd frontend && npm run lint` (10 warnings, 0 errors); PASS - `cd frontend && npm run build`; PASS - `npm audit --audit-level=high` in both `backend/` and `frontend/`; PASS - live API repair verification showed 0 HTML descriptions left and corrected prices for Automatic Dispenser, Mini Diffuser, and Diffuser; PASS - live `Publish to WhatsApp` queued 27 products with 0 failures.
+**Commit**: Pending
+
+- Added shared `productCatalogue` helpers for plain-text description cleanup and comma-aware price formatting.
+- Sanitized product descriptions on Meta import, manual add/edit, Shopify import, product bot captions, Smart Automation matching, and re-embedding.
+- Updated both Meta publishing helpers to send clean descriptions and normalized `1234.00 INR` price strings.
+- Repaired live product prices to `3699`, `23099`, and `52499` after verifying those MRP values on `https://narmadaessence.com/`, then published the repaired catalogue to Meta.
+
 ## 2026-07-02 — Fix Meta Price Parsing For Product Replies
 **What**: Fixed Meta catalogue price parsing so comma-grouped amounts import as full rupee values instead of truncated fragments.
 **Why**: Product bot replies were showing wrong prices such as `INR 3`, `INR 23`, or `INR 52` because Meta price strings with commas were parsed by taking only the first numeric fragment.

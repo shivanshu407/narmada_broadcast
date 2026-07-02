@@ -2,6 +2,17 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-032: WhatsApp Catalogue Descriptions Published Raw HTML And Some Live Prices Stayed Truncated
+**Status**: Resolved
+**Severity**: High
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: The customer WhatsApp catalogue showed product descriptions beginning with raw HTML such as `<ul><li><b>product type:</b>...`, and some products still showed prices like `3.00`, `23.00`, or `52.00`.
+**Root Cause**: Meta import, manual product edit, Shopify import, catalogue publish, and product bot caption paths passed `description` through without stripping HTML. The earlier comma-price bug had also already poisoned live MongoDB and Meta rows, so a code parser fix alone could not recover prices once Meta had been republished as `3.00 INR` instead of `3,699.00 INR`.
+**Workaround**: None needed after this fix. Before this fix, manually edit affected products in the dashboard to remove HTML and restore full prices, then run `Publish to WhatsApp`.
+**Fix**: Added shared product catalogue formatting helpers, sanitized descriptions across import/store/publish/reply paths, normalized outbound Meta prices, repaired live MongoDB product rows, and queued 27 repaired products to Meta with 0 failures.
+**Regression Test**: `backend/test/regression.test.js` test `Product catalogue publishing sends plain descriptions and normalized prices`.
+
 ## ISSUE-031: Meta Price Strings With Commas Imported As Tiny Amounts
 **Status**: Resolved
 **Severity**: High

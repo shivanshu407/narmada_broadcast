@@ -17,6 +17,10 @@ import {
     SUPPORT_FEEDBACK_THANK_YOU,
     parseSupportFeedbackReply,
 } from '../services/supportFeedback.js';
+import {
+    productPriceAmount,
+    sanitizeProductDescriptionForCatalogue,
+} from '../utils/productCatalogue.js';
 
 const router = Router();
 
@@ -708,7 +712,12 @@ router.post('/', async (req, res) => {
                                     const product = botReply.data;
                                     interactionType = 'product_answer';
                                     interactionMetadata.product_id = product._id || product.id;
-                                    const caption = `*${product.name}*\n${product.description ? product.description + '\n' : ''}\nPrice: ₹${product.selling_price || product.mrp}`;
+                                    const description = sanitizeProductDescriptionForCatalogue(product.description);
+                                    const caption = [
+                                        `*${product.name}*`,
+                                        description,
+                                        `Price: ₹${productPriceAmount(product)}`
+                                    ].filter(Boolean).join('\n');
 
                                     if (setting.whatsapp_catalog_id && product.sku) {
                                         const interactivePayload = {

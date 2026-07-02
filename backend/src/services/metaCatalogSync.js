@@ -1,5 +1,9 @@
 
 import Setting from '../models/Setting.js';
+import {
+    formatMetaCataloguePrice,
+    sanitizeProductDescriptionForCatalogue,
+} from '../utils/productCatalogue.js';
 
 /**
  * Syncs a single product to the Meta Commerce Manager Catalog.
@@ -28,8 +32,8 @@ export async function syncProductToMeta(product) {
         }
 
         // Format price (Meta expects string format like "100.00 INR")
-        const priceValue = (product.selling_price || product.mrp || 0).toFixed(2);
-        const priceString = `${priceValue} INR`;
+        const priceString = formatMetaCataloguePrice(product);
+        const description = sanitizeProductDescriptionForCatalogue(product.description, product.name || 'No description available.');
 
         const payload = {
             item_type: 'PRODUCT_ITEM',
@@ -39,7 +43,7 @@ export async function syncProductToMeta(product) {
                     data: {
                         id: contentId,
                         title: product.name || 'Untitled Product',
-                        description: product.description || 'No description available.',
+                        description: description || 'No description available.',
                         availability: availability,
                         condition: 'new',
                         price: priceString,

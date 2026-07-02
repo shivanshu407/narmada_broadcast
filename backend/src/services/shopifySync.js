@@ -3,6 +3,7 @@ import ShopifyConnection from '../models/ShopifyConnection.js';
 import IntegrationSyncRun from '../models/IntegrationSyncRun.js';
 import Setting from '../models/Setting.js';
 import { syncProductToMeta } from './whatsapp.js';
+import { sanitizeProductDescriptionForCatalogue } from '../utils/productCatalogue.js';
 
 const SHOPIFY_GRAPHQL_PATH = '/admin/api/2026-04/graphql.json';
 
@@ -229,7 +230,7 @@ async function upsertVariantProduct({ tenantId, connectionId, product, variant }
     
     const updateData = {
         name,
-        description: product.description || '',
+        description: sanitizeProductDescriptionForCatalogue(product.description),
         mrp,
         selling_price: sellingPrice,
         category: product.productType || product.vendor || '',
