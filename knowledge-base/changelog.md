@@ -2,6 +2,18 @@
 
 All notable changes to the WhatsApp Broadcast SaaS project, in reverse chronological order.
 
+## 2026-07-02 — Restore Chat Inbox Handoff Routes On Vercel
+**What**: Added the missing Mongo/Vercel backend routes for Chat Inbox handoff resolution and teach-from-chat, and restored server-side Needs Human filtering.
+**Why**: The live Vercel frontend called `PATCH /api/v1/whatsapp/chat/conversations/:id/handoff/resolve`, but the backend did not define that route, so Express returned an HTML `Cannot PATCH ...` page in the error toast.
+**Impact**: Resolve Handoff now resumes Smart Automation for that conversation, clears `needs_human`, clears `handoff_reason`, optionally sends the customer feedback request, and refreshes the handoff queue. Teach-from-chat can create Smart FAQs through the backend route the UI already called.
+**Files Changed**: `backend/src/routes/whatsapp-chat.js`, `backend/test/regression.test.js`, `knowledge-base/chat-inbox.md`, `knowledge-base/README.md`, `knowledge-base/changelog.md`, `knowledge-base/known-issues.md`, `knowledge-base/testing.md`, `knowledge-base/active-context.md`
+**Tests**: PASS - `cd backend && npm test` (22 tests); PASS - backend `node --check` sweep; PASS - `cd frontend && npm run lint` (9 warnings, 0 errors); PASS - `cd frontend && npm run build`; PASS - `npm audit --audit-level=high` in both `backend/` and `frontend/`; PASS - `git diff --check`.
+**Commit**: Pending
+
+- Ported the main-platform `handoff/resolve` and `teach` Chat Inbox contracts to the Mongo/Vercel fork.
+- Added regression coverage that fails if the frontend Chat Inbox handoff and teach actions drift away from backend routes again.
+- Added a dedicated Chat Inbox KB page documenting route contracts and Vercel gotchas.
+
 ## 2026-07-02 — Smart Automation No-Order FAQ Fallback
 **What**: Ported the main platform chatbot fix from `4943beeb6977d2d77c8565e4ad9eb97b87c021fc` so no-order Smart Flow handoffs are deferred behind FAQ/product retrieval.
 **Why**: Order/delivery/payment-style questions can trigger the order-status flow. If the customer has no order, the app should still try the client's Smart FAQs/products before telling the customer a human will follow up.

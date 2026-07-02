@@ -68,6 +68,7 @@ narmada_broadcast/
 | `decisions.md` | Before changing architecture, auth, database, deployment, or testing choices |
 | `known-issues.md` | Before debugging anything |
 | `testing.md` | Before writing or changing tests |
+| `chat-inbox.md` | Before touching Chat Inbox, handoff, bot pause, media, or teach-from-chat |
 | `chatbot.md` | Before touching Smart FAQs, Smart Automation, embeddings, or bot replies |
 | `frontend.md` | Before touching the app shell or UI components |
 | `security.md` | Before touching auth, secrets, webhooks, uploads, or payment flows |

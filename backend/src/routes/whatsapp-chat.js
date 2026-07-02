@@ -76,6 +76,42 @@ function getTemplatePlainText(resolvedBody) {
     return resolvedBody;
 }
 
+async function sendFeedbackRequest(conversation, req) {
+    const { sendInteractiveMessage } = await import('../services/whatsapp.js');
+    const interactiveOptions = {
+        type: 'button',
+        body: { text: 'Your support chat has been resolved. Please rate your experience:' },
+        action: {
+            buttons: [
+                { type: 'reply', reply: { id: 'feedback_good', title: 'Good' } },
+                { type: 'reply', reply: { id: 'feedback_bad', title: 'Bad' } },
+            ],
+        },
+    };
+
+    const result = await sendInteractiveMessage(conversation.phone, interactiveOptions, req.tenant);
+    if (!result?.messageId) return false;
+
+    await WhatsAppChatMessage.create({
+        tenant_id: req.tenantId,
+        conversation_id: conversation._id,
+        direction: 'outbound',
+        message_type: 'interactive',
+        body: '[Feedback Request Sent]',
+        provider_message_id: result.messageId,
+        status: 'sent',
+        sent_by: req.user.userId
+    });
+
+    conversation.last_message_text = '[Feedback Request Sent]';
+    conversation.last_message_at = new Date();
+    conversation.unread_count = 0;
+    await conversation.save();
+
+    emitToTenant(req.tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+    return true;
+}
+
 router.use((req, res, next) => {
     if (!req.user || req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });
@@ -148,10 +184,14 @@ router.post('/conversations/new', async (req, res) => {
 
 router.get('/conversations', async (req, res) => {
     try {
-        const { search, archived = '0', page = 1, limit = 30, paid } = req.query;
+        const { search, archived = '0', page = 1, limit = 30, paid, needs_human } = req.query;
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         const filter = { tenant_id: req.tenantId, is_archived: archived === '1' };
+
+        if (needs_human === '1') {
+            filter.needs_human = true;
+        }
 
         // For paid, we would ideally need a relationship to Order or check the phone in orders.
         // Assuming we omit `paid` filtering for simplicity or we should look it up first.
@@ -494,6 +534,59 @@ router.patch('/conversations/:id/bot-pause', async (req, res) => {
     } catch (error) {
         console.error('[Bot Pause] Update error:', error);
         res.status(500).json({ error: 'Failed to update bot pause' });
+    }
+});
+
+router.patch('/conversations/:id/handoff/resolve', async (req, res) => {
+    try {
+        const { send_feedback } = req.body || {};
+
+        const conv = await WhatsAppConversation.findOne({ _id: req.params.id, tenant_id: req.tenantId });
+        if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+
+        conv.needs_human = false;
+        conv.bot_paused = false;
+        conv.handoff_reason = null;
+        conv.unread_count = 0;
+        await conv.save();
+
+        if (send_feedback) {
+            await sendFeedbackRequest(conv, req);
+        }
+
+        emitToTenant(req.tenantId, 'chat_updated', { type: 'handoff_resolved', conversationId: conv._id.toString() });
+        res.json({ success: true, needs_human: false, bot_paused: false });
+    } catch (error) {
+        console.error('[Handoff] Resolve error:', error);
+        res.status(500).json({ error: 'Failed to resolve handoff' });
+    }
+});
+
+router.post('/conversations/:id/teach', async (req, res) => {
+    try {
+        const { question, answer, source_message_id } = req.body || {};
+        if (!String(question || '').trim() || !String(answer || '').trim()) {
+            return res.status(400).json({ error: 'question and answer are required' });
+        }
+
+        const conversation = await WhatsAppConversation.findOne({ _id: req.params.id, tenant_id: req.tenantId }).lean();
+        if (!conversation) return res.status(404).json({ error: 'Conversation not found' });
+
+        const setting = req.tenant || await Setting.findOne({ singletonId: 'admin_settings' }).lean();
+        const { teachFromConversation } = await import('../services/botLearning.js');
+        const result = await teachFromConversation({
+            tenantId: req.tenantId,
+            conversationId: conversation._id.toString(),
+            question,
+            answer,
+            sourceMessageId: source_message_id,
+            botSettings: setting?.bot_settings || {},
+        });
+
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('[Teach Bot] Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to teach bot' });
     }
 });
 

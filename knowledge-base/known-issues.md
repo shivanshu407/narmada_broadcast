@@ -2,6 +2,17 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-022: Resolve Handoff PATCH Route Missing On Vercel
+**Status**: Resolved
+**Severity**: High
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: Clicking Resolve Handoff in the live Chat Inbox showed a red toast containing an HTML Express error like `Cannot PATCH /api/v1/whatsapp/chat/conversations/:id/handoff/resolve`.
+**Root Cause**: The Narmada frontend had the main-platform Chat Inbox handoff and teach actions, but the Mongo/Vercel backend route file only implemented bot pause. The backend also ignored the `needs_human=1` inbox filter used by the frontend.
+**Workaround**: None needed after this fix. Before this fix, agents could use the bot pause resume action for some conversations, but the Resolve Handoff modal itself stayed broken.
+**Fix**: Added `PATCH /api/v1/whatsapp/chat/conversations/:id/handoff/resolve`, added `POST /api/v1/whatsapp/chat/conversations/:id/teach`, restored server-side `needs_human=1` filtering, and documented the Chat Inbox route contract.
+**Regression Test**: `backend/test/regression.test.js` test `Chat Inbox handoff resolution and teach actions have backend routes matching the frontend contract`.
+
 ## ISSUE-021: No-Order Smart Flow Could Bypass FAQ Answers
 **Status**: Resolved
 **Severity**: High

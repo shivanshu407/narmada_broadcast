@@ -218,6 +218,31 @@ test('bot pause is persisted server-side and webhook auto-reply respects it', ()
   assert.doesNotMatch(chatComponentSource, /localStorage\.setItem\(BOT_PAUSE_KEY/);
 });
 
+test('Chat Inbox handoff resolution and teach actions have backend routes matching the frontend contract', () => {
+  const conversationModelSource = readRepoFile('backend/src/models/WhatsAppConversation.js');
+  const chatRouteSource = readRepoFile('backend/src/routes/whatsapp-chat.js');
+  const storeSource = readRepoFile('frontend/src/stores/store.js');
+  const chatComponentSource = readRepoFile('frontend/src/components/WhatsAppChat.jsx');
+
+  assert.match(conversationModelSource, /needs_human:\s*\{\s*type:\s*Boolean,\s*default:\s*false\s*\}/);
+  assert.match(conversationModelSource, /handoff_reason:\s*\{\s*type:\s*String,\s*default:\s*null\s*\}/);
+  assert.match(chatRouteSource, /needs_human\s*={2,3}\s*'1'/);
+  assert.match(chatRouteSource, /filter\.needs_human\s*=\s*true/);
+  assert.match(storeSource, /\/whatsapp\/chat\/conversations\/\$\{conversationId\}\/handoff\/resolve/);
+  assert.match(storeSource, /\/whatsapp\/chat\/conversations\/\$\{conversationId\}\/teach/);
+  assert.match(chatComponentSource, /resolveHumanHandoff/);
+  assert.match(chatComponentSource, /teachBotFromConversation/);
+  assert.match(chatRouteSource, /\/conversations\/:id\/handoff\/resolve/);
+  assert.match(chatRouteSource, /needs_human\s*=\s*false/);
+  assert.match(chatRouteSource, /bot_paused\s*=\s*false/);
+  assert.match(chatRouteSource, /handoff_reason\s*=\s*null/);
+  assert.match(chatRouteSource, /handoff_resolved/);
+  assert.match(chatRouteSource, /send_feedback/);
+  assert.match(chatRouteSource, /\/conversations\/:id\/teach/);
+  assert.match(chatRouteSource, /teachFromConversation/);
+  assert.match(chatRouteSource, /source_message_id/);
+});
+
 test('tenant settings mask payment secrets before returning to the browser', async () => {
   const { sanitizeBotSettingsForClient, mergeSecretSettings } = await importFromBackend('src/utils/settings-security.js');
   const storedSettings = {
