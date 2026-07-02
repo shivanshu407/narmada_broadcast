@@ -14,6 +14,7 @@ single-client product.
 | `backend/src/routes/webhook.js` | Main webhook route mounted at `/api/v1/whatsapp-webhook`; handles inbound messages, status updates, cart orders, Smart Automation replies, and handoff state. |
 | `backend/src/services/whatsapp.js` | Meta Cloud API send helpers for text, media, templates, and interactive messages. |
 | `backend/src/services/humanHandoffConfirmation.js` | Builds the unknown-message Yes/No prompt and parses customer confirmation replies. |
+| `backend/src/services/supportFeedback.js` | Parses Good/Bad support-feedback button replies and defines the thank-you acknowledgement. |
 | `backend/src/services/smartResponder.js` | Finds FAQ/product/retrieval replies and delegates Smart Flow checks. |
 | `backend/src/services/smartFlows.js` | Handles order status, product search, and explicit customer support intents. |
 | `backend/src/models/WhatsAppConversation.js` | Stores chat state, including `bot_paused`, `needs_human`, `handoff_reason`, and `bot_state`. |
@@ -37,6 +38,12 @@ single-client product.
   handoff path; no-order handoffs remain deferred behind FAQ/product retrieval.
 - Cart order messages are handled before Smart Automation replies and then
   skipped so the customer does not receive two responses.
+- Support feedback button replies (`feedback_good` and `feedback_bad`) are
+  terminal webhook events. They should store
+  `bot_state.last_support_feedback`, send the thank-you acknowledgement, emit
+  `support_feedback_received`, and skip Smart Automation.
+- Do not parse typed "Good" or "Bad" text as support feedback; only stable
+  button IDs should count as a resolved-chat rating.
 
 ## Known Gotchas
 
@@ -49,6 +56,9 @@ single-client product.
 - If a customer ignores a pending Yes/No prompt and sends a new question, the
   webhook clears the pending flag and lets Smart Automation evaluate the new
   message normally.
+- Feedback buttons and human-handoff confirmation buttons are both interactive
+  replies. Route by stable IDs before using button titles, or unrelated support
+  ratings can accidentally become Smart Automation input.
 - Status callbacks and inbound messages share the route; avoid changes that
   make message-processing failures block status updates for unrelated entries.
 
@@ -60,6 +70,8 @@ single-client product.
 - No-order Smart Flow handoffs being deferred behind FAQ/product retrieval.
 - Unknown-message confirmation prompt payload, Yes/No parser, pending
   `bot_state`, and webhook handoff wiring.
+- Support feedback parsing, webhook short-circuiting before Smart Automation,
+  rating storage, and thank-you acknowledgement.
 - Chat Inbox route contracts that consume `needs_human` and handoff state.
 
 Run:

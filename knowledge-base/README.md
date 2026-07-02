@@ -50,7 +50,7 @@ narmada_broadcast/
 | Key | Value |
 |-----|-------|
 | Repo | `https://github.com/MBKANERIYA/narmada_broadcast` |
-| Vercel URL | `https://narmada-broadcast-8vox.vercel.app/` |
+| Vercel URL | `https://broadcast-gilt.vercel.app/` |
 | DB | Client-owned MongoDB Atlas database via `MONGO_URI` |
 | CI/CD | Vercel GitHub deployment from `main` |
 | Backend Test Command | `cd backend && npm test` |

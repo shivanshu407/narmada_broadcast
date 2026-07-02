@@ -13,6 +13,10 @@ import {
     buildHumanHandoffConfirmationPrompt,
     parseHumanHandoffConfirmationReply,
 } from '../services/humanHandoffConfirmation.js';
+import {
+    SUPPORT_FEEDBACK_THANK_YOU,
+    parseSupportFeedbackReply,
+} from '../services/supportFeedback.js';
 
 const router = Router();
 
@@ -252,6 +256,46 @@ router.post('/', async (req, res) => {
                             }
                             
                             // Skip automated bot reply since we handled the cart
+                            continue;
+                        }
+
+                        const supportFeedbackRating = parseSupportFeedbackReply({
+                            interactive: msg.interactive,
+                            button: msg.button,
+                        });
+                        if (supportFeedbackRating) {
+                            conversation.bot_state = {
+                                ...(conversation.bot_state || {}),
+                                last_support_feedback: {
+                                    rating: supportFeedbackRating,
+                                    received_at: new Date().toISOString(),
+                                    message_id: newMsg._id.toString(),
+                                },
+                            };
+                            conversation.markModified('bot_state');
+
+                            const result = await sendTextMessage(fromPhone, SUPPORT_FEEDBACK_THANK_YOU, setting);
+                            if (result && result.messageId) {
+                                await WhatsAppChatMessage.create({
+                                    tenant_id: tenantId,
+                                    conversation_id: conversation._id,
+                                    direction: 'outbound',
+                                    message_type: 'text',
+                                    body: SUPPORT_FEEDBACK_THANK_YOU,
+                                    provider_message_id: result.messageId,
+                                    status: 'sent'
+                                });
+                                conversation.last_message_text = SUPPORT_FEEDBACK_THANK_YOU;
+                                conversation.last_message_at = new Date();
+                                conversation.unread_count = 0;
+                            }
+
+                            await conversation.save();
+                            emitToTenant(tenantId, 'chat_updated', {
+                                type: 'support_feedback_received',
+                                conversationId: conversation._id.toString(),
+                                rating: supportFeedbackRating,
+                            });
                             continue;
                         }
 

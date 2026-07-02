@@ -40,8 +40,8 @@ Preview, and Development as needed:
 ```bash
 MONGO_URI=<mongodb-connection-string>
 JWT_SECRET=<strong-random-jwt-secret>
-CORS_ORIGINS=https://narmada-broadcast-8vox.vercel.app
-APP_DOMAIN=narmada-broadcast-8vox.vercel.app
+CORS_ORIGINS=https://broadcast-gilt.vercel.app
+APP_DOMAIN=broadcast-gilt.vercel.app
 ```
 
 Optional integration variables are configured in the app UI where possible:
@@ -76,6 +76,18 @@ credentials as compromised:
 4. Redeploy the Vercel project.
 
 The current code fails fast in production/Vercel if `MONGO_URI` is missing.
+
+## Current Live URL
+
+The active Vercel deployment is:
+
+```bash
+https://broadcast-gilt.vercel.app/
+```
+
+The previous deployment URL, `https://narmada-broadcast-8vox.vercel.app/`, was
+retired after the earlier Vercel account hit deployment limits. GitHub remains
+`https://github.com/MBKANERIYA/narmada_broadcast`.
 
 ## Deploy From GitHub
 
@@ -115,8 +127,8 @@ exit successfully before deployment handoff.
 After Vercel redeploys:
 
 ```bash
-curl https://narmada-broadcast-8vox.vercel.app/health
-curl https://narmada-broadcast-8vox.vercel.app/api/v1/tenant-settings
+curl https://broadcast-gilt.vercel.app/health
+curl https://broadcast-gilt.vercel.app/api/v1/tenant-settings
 ```
 
 For authenticated checks, log in with the client admin credentials and verify:

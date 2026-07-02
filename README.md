@@ -65,8 +65,8 @@ Set these in Vercel before deploying:
 ```env
 MONGO_URI=<mongodb-connection-string>
 JWT_SECRET=<strong-random-jwt-secret>
-CORS_ORIGINS=https://narmada-broadcast-8vox.vercel.app
-APP_DOMAIN=narmada-broadcast-8vox.vercel.app
+CORS_ORIGINS=https://broadcast-gilt.vercel.app
+APP_DOMAIN=broadcast-gilt.vercel.app
 ```
 
 Important: do not commit real MongoDB, JWT, Meta, Razorpay, or Shopify secrets.

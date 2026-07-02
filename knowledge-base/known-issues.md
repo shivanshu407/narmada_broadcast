@@ -2,6 +2,39 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-029: Labeled Broadcast Regression Test Was Too Specific
+**Status**: Resolved
+**Severity**: Low
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: The backend regression suite failed on current upstream `main` before new chat work started, even though the labeled-broadcast route still filtered by `recipientFilter.label`.
+**Root Cause**: The static assertion expected a `labels: { ... }` object-literal shape, but the Mongo route now assigns `baseFilter.labels = { $regex: new RegExp(recipientFilter.label, 'i') }`.
+**Workaround**: None needed after this fix.
+**Fix**: Updated the regression assertion to match the current Mongo query assignment without weakening the labeled-filter contract.
+**Regression Test**: `backend/test/regression.test.js` test `labeled broadcasts are supported by the campaign schema and route`.
+
+## ISSUE-028: Chat Inbox Needed Manual Refresh On Vercel
+**Status**: Resolved
+**Severity**: High
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: Operators had to refresh the Vercel page to see newly arrived messages or updated conversation state in Chat Inbox.
+**Root Cause**: The Chat Inbox had removed polling and depended on Socket.IO refresh events. Vercel serverless functions cannot be treated as a reliable long-lived Socket.IO host for this deployment.
+**Workaround**: None needed after this fix. Before the fix, manually refresh the page to see new messages.
+**Fix**: Added a lightweight 5-second polling fallback while Chat Inbox is mounted, plus immediate refresh on window focus and tab visibility return.
+**Regression Test**: `backend/test/regression.test.js` test `Chat Inbox has a polling fallback when Vercel sockets are unavailable`.
+
+## ISSUE-027: Support Feedback Replies Fell Through To Smart Automation
+**Status**: Resolved
+**Severity**: Medium
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: After a support chat was resolved, tapping Good or Bad feedback on WhatsApp could trigger an unrelated Smart Automation reply such as the welcome text.
+**Root Cause**: The webhook displayed button replies as inbound messages but had no terminal support-feedback branch for `feedback_good` or `feedback_bad`, so those replies continued into the normal automation pipeline.
+**Workaround**: None needed after this fix. Before the fix, avoid using feedback buttons on live chats if unrelated bot replies are unacceptable.
+**Fix**: Added `supportFeedback.js`, parsed stable feedback button IDs, stored `bot_state.last_support_feedback`, sent "Thank you for your feedback.", emitted `support_feedback_received`, and skipped Smart Automation for that webhook message.
+**Regression Test**: `backend/test/regression.test.js` test `support feedback button replies are acknowledged without Smart Automation`.
+
 ## ISSUE-026: Unmatched Messages Needed Confirmation Before Human Handoff
 **Status**: Resolved
 **Severity**: Medium

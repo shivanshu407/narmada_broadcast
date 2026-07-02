@@ -42,7 +42,7 @@ The Vite dev proxy targets `http://localhost:3000` by default. To point local UI
 at the live Vercel API:
 
 ```powershell
-$env:VITE_DEV_API_PROXY_TARGET='https://narmada-broadcast-8vox.vercel.app'
+$env:VITE_DEV_API_PROXY_TARGET='https://broadcast-gilt.vercel.app'
 npm run dev -- --host 127.0.0.1
 ```
 

@@ -18,13 +18,13 @@
 | `npm run build` from `frontend/` | Vite production build for the Preact SPA |
 | `npm audit --audit-level=high` from `frontend/` | Frontend dependency vulnerability gate |
 | `npm audit --audit-level=high` from `backend/` | Backend dependency vulnerability gate |
-| `$env:VITE_DEV_API_PROXY_TARGET='https://narmada-broadcast-8vox.vercel.app'; npm run dev -- --host 127.0.0.1` from `frontend/` | Local Vite app pointed at the live Vercel API for browser QA without CORS issues |
+| `$env:VITE_DEV_API_PROXY_TARGET='https://broadcast-gilt.vercel.app'; npm run dev -- --host 127.0.0.1` from `frontend/` | Local Vite app pointed at the live Vercel API for browser QA without CORS issues |
 
 ## Current Session Status
 
 As of 2026-07-02:
 
-- PASS - `cd backend && npm test` (26 tests).
+- PASS - `cd backend && npm test` (28 tests).
 - PASS - backend PowerShell `node --check` sweep across `backend/src/**/*.js`.
 - PASS - `cd frontend && npm run lint` with 10 warnings and 0 errors.
 - PASS - `cd frontend && npm run build`.
@@ -54,6 +54,10 @@ Frontend automated component tests are not configured yet. Until they exist, kee
 - Chat Inbox handoff UI must cover that handoff conversations expose only one feedback-sending resolve action.
 - Chat Inbox UI/date behavior must cover compact header class contracts and Mongo ISO timestamps not rendering as `Invalid Date`.
 - Chat Inbox commerce filters must cover server-side `filter=paid|unpaid_orders|abandoned_carts`, `filter_counts`, and paid/unpaid/abandoned conversation chips.
+- Chat Inbox must keep a Vercel-safe polling fallback that refreshes the
+  conversation list and selected thread without relying only on Socket.IO.
+- Support feedback button replies (`feedback_good` and `feedback_bad`) must be
+  acknowledged as terminal webhook events and must not enter Smart Automation.
 - WhatsApp customer self-service actions must stay tenant-scoped and phone-scoped when acting on orders; cancel-order payloads must never update an order using only `tenant_id` and `id`.
 - WhatsApp support contact cards must use a configured tenant phone number; do not send placeholder or sample phone numbers to customers.
 - Smart Automation must not hand off no-order customers before trying FAQ/product retrieval.

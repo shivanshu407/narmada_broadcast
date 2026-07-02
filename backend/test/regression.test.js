@@ -140,6 +140,34 @@ test('Smart Automation asks before escalating unmatched messages to a human', as
   assert.match(webhookSource, /interactionType:\s*'human_handoff_confirmation'/);
 });
 
+test('support feedback button replies are acknowledged without Smart Automation', async () => {
+  const webhookSource = readRepoFile('backend/src/routes/webhook.js');
+  const chatRouteSource = readRepoFile('backend/src/routes/whatsapp-chat.js');
+  const {
+    SUPPORT_FEEDBACK_THANK_YOU,
+    parseSupportFeedbackReply,
+  } = await importFromBackend('src/services/supportFeedback.js');
+
+  assert.match(chatRouteSource, /id:\s*['"]feedback_good['"]/);
+  assert.match(chatRouteSource, /id:\s*['"]feedback_bad['"]/);
+  assert.equal(SUPPORT_FEEDBACK_THANK_YOU, 'Thank you for your feedback.');
+  assert.equal(
+    parseSupportFeedbackReply({
+      interactive: { type: 'button_reply', button_reply: { id: 'feedback_good', title: 'Good' } },
+    }),
+    'good'
+  );
+  assert.equal(parseSupportFeedbackReply({ button: { payload: 'feedback_bad', text: 'Bad' } }), 'bad');
+  assert.equal(parseSupportFeedbackReply({ bodyText: 'Good' }), null);
+
+  assert.match(webhookSource, /parseSupportFeedbackReply/);
+  assert.match(webhookSource, /const supportFeedbackRating = parseSupportFeedbackReply/);
+  assert.match(webhookSource, /last_support_feedback/);
+  assert.match(webhookSource, /SUPPORT_FEEDBACK_THANK_YOU/);
+  assert.match(webhookSource, /support_feedback_received/);
+  assert.match(webhookSource, /supportFeedbackRating[\s\S]+continue;[\s\S]+const botSettings = setting\.bot_settings/);
+});
+
 test('smart responder can score text-only FAQs when vectors are unavailable', async () => {
   const { scoreTextMatch } = await importFromBackend('src/services/smartResponder.js');
 
@@ -234,7 +262,7 @@ test('labeled broadcasts are supported by the campaign schema and route', () => 
 
   assert.match(campaignModelSource, /enum:\s*\['all', 'custom', 'labeled', 'tagged', 'filtered'\]/);
   assert.match(whatsappRouteSource, /recipientType === 'labeled'/);
-  assert.match(whatsappRouteSource, /labels:\s*\{\s*\$regex:\s*new RegExp\(recipientFilter\.label, 'i'\)/);
+  assert.match(whatsappRouteSource, /baseFilter\.labels\s*=\s*\{\s*\$regex:\s*new RegExp\(recipientFilter\.label,\s*'i'\)\s*\}/);
 });
 
 test('Socket chat refresh accepts the backend conversationId event key', () => {
@@ -356,6 +384,21 @@ test('Chat Inbox filters commerce-status conversations through Mongo order state
   assert.match(mainCss, /\.chat-filter-select/);
   assert.match(mainCss, /\.conversation-chip\.is-unpaid/);
   assert.match(mainCss, /\.conversation-chip\.is-abandoned/);
+});
+
+test('Chat Inbox has a polling fallback when Vercel sockets are unavailable', () => {
+  const chatComponentSource = readRepoFile('frontend/src/components/WhatsAppChat.jsx');
+
+  assert.match(chatComponentSource, /CHAT_INBOX_REFRESH_MS\s*=\s*5000/);
+  assert.match(chatComponentSource, /activeFilterRef/);
+  assert.match(chatComponentSource, /fetchConversationsRef/);
+  assert.match(chatComponentSource, /fetchChatMessagesRef/);
+  assert.match(chatComponentSource, /refreshChatInbox/);
+  assert.match(chatComponentSource, /setInterval\(refreshChatInbox,\s*CHAT_INBOX_REFRESH_MS\)/);
+  assert.match(chatComponentSource, /document\.addEventListener\('visibilitychange'/);
+  assert.match(chatComponentSource, /window\.addEventListener\('focus'/);
+  assert.match(chatComponentSource, /fetchChatMessagesRef\.current\(currentConversationId\)/);
+  assert.doesNotMatch(chatComponentSource, /Polling removed in favor of WebSockets managed in store\.js/);
 });
 
 test('tenant settings mask payment secrets before returning to the browser', async () => {

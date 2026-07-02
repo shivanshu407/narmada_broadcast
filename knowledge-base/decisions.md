@@ -2,6 +2,24 @@
 
 This document logs the architectural choices made during the development of the WhatsApp Broadcast SaaS.
 
+## Decision: Support Feedback Replies Are Terminal Webhook Events
+**Date**: 2026-07-02
+**Status**: Accepted
+**Context**: Resolve Handoff and Resolve Chat send WhatsApp Good/Bad feedback buttons. Those button replies are customer support ratings, not new product or FAQ questions.
+**Decision**: Parse only stable feedback button IDs (`feedback_good` and `feedback_bad`) before Smart Automation. Store the rating in `conversation.bot_state.last_support_feedback`, send a thank-you text, emit a chat refresh event, and stop webhook processing for that message.
+**Alternatives Considered**: Let Smart Automation answer feedback replies, parse typed "Good"/"Bad" text as feedback, or ignore feedback entirely. Automation replies are wrong for terminal support ratings. Typed text parsing risks false positives. Ignoring feedback gives the customer no acknowledgement.
+**Consequences**: Support ratings no longer create unrelated bot replies. Future feedback analytics can read `bot_state.last_support_feedback`; richer analytics may need a dedicated collection if historical reporting becomes important.
+**Superseded By**:
+
+## Decision: Chat Inbox Uses Polling Fallback On Vercel
+**Date**: 2026-07-02
+**Status**: Accepted
+**Context**: Chat Inbox realtime events worked only when Socket.IO stayed connected. The Narmada deployment runs on Vercel serverless functions, where long-lived sockets are unreliable for this product shape.
+**Decision**: Keep existing websocket refresh support, but add a lightweight frontend polling fallback while `WhatsAppChat.jsx` is mounted. Poll every 5 seconds, skip hidden tabs, refresh immediately on window focus or visibility return, and fetch both the conversation list and the currently selected thread.
+**Alternatives Considered**: Rely on manual refresh, add a separate realtime service, or force Vercel to host Socket.IO. Manual refresh misses customer messages. A separate realtime service adds infrastructure not needed for this single-client deployment. Treating Vercel functions as a socket host caused the observed stale UI.
+**Consequences**: Operators see new messages without refreshing, at the cost of a small amount of periodic API traffic while the inbox is open. If the product later needs higher scale or true push, move realtime to a managed websocket/realtime service.
+**Superseded By**:
+
 ## Decision: Unknown Smart Automation Misses Require Customer Confirmation Before Handoff
 **Date**: 2026-07-02
 **Status**: Accepted

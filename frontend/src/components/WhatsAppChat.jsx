@@ -3,6 +3,8 @@ import { useStore } from '../stores/store';
 import { formatChatDateSeparator, formatChatFullTime, formatChatTime } from '../utils/chatDates';
 import Icon from './Icons';
 
+const CHAT_INBOX_REFRESH_MS = 5000;
+
 const MediaMessage = ({ mediaId, type }) => {
     const { fetchMediaUrl } = useStore();
     const [mediaUrl, setMediaUrl] = useState(null);
@@ -254,8 +256,15 @@ export default function WhatsAppChat() {
     // Keep refs in sync so polling always uses latest values
     const selectedConvIdRef = useRef(selectedConvId);
     const searchRef = useRef(search);
+    const activeFilterRef = useRef(activeFilter);
+    const fetchConversationsRef = useRef(fetchConversations);
+    const fetchChatMessagesRef = useRef(fetchChatMessages);
+    const isChatRefreshInFlightRef = useRef(false);
     useEffect(() => { selectedConvIdRef.current = selectedConvId; }, [selectedConvId]);
     useEffect(() => { searchRef.current = search; }, [search]);
+    useEffect(() => { activeFilterRef.current = activeFilter; }, [activeFilter]);
+    useEffect(() => { fetchConversationsRef.current = fetchConversations; }, [fetchConversations]);
+    useEffect(() => { fetchChatMessagesRef.current = fetchChatMessages; }, [fetchChatMessages]);
 
     // Initial load
     useEffect(() => {
@@ -264,7 +273,43 @@ export default function WhatsAppChat() {
         fetchContacts();
     }, []);
 
-    // Polling removed in favor of WebSockets managed in store.js
+    // Vercel serverless deployments cannot rely on long-lived Socket.IO,
+    // so keep a lightweight polling fallback while Chat Inbox is open.
+    useEffect(() => {
+        let cancelled = false;
+
+        const refreshChatInbox = async () => {
+            if (cancelled || document.visibilityState === 'hidden' || isChatRefreshInFlightRef.current) return;
+            isChatRefreshInFlightRef.current = true;
+            const currentConversationId = selectedConvIdRef.current;
+
+            try {
+                await fetchConversationsRef.current(searchRef.current, activeFilterRef.current);
+                if (currentConversationId) {
+                    await fetchChatMessagesRef.current(currentConversationId);
+                }
+            } catch (err) {
+                console.error('Chat Inbox polling refresh failed:', err);
+            } finally {
+                isChatRefreshInFlightRef.current = false;
+            }
+        };
+
+        const timer = setInterval(refreshChatInbox, CHAT_INBOX_REFRESH_MS);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') refreshChatInbox();
+        };
+
+        window.addEventListener('focus', refreshChatInbox);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+            window.removeEventListener('focus', refreshChatInbox);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => fetchConversations(search, activeFilter), 300);
