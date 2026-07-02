@@ -68,6 +68,7 @@ narmada_broadcast/
 | `decisions.md` | Before changing architecture, auth, database, deployment, or testing choices |
 | `known-issues.md` | Before debugging anything |
 | `testing.md` | Before writing or changing tests |
+| `whatsapp-webhook.md` | Before touching inbound WhatsApp callbacks, auto-replies, cart messages, or handoff confirmation |
 | `chat-inbox.md` | Before touching Chat Inbox, handoff, bot pause, media, or teach-from-chat |
 | `hosted-checkout.md` | Before touching checkout sessions, checkout order status, payment links, or commerce chat filters |
 | `chatbot.md` | Before touching Smart FAQs, Smart Automation, embeddings, or bot replies |

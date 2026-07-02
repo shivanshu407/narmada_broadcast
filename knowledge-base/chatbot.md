@@ -27,6 +27,14 @@ available and deterministic lexical matching as the fallback.
 - Configure local model cache paths before loading `@huggingface/transformers` pipelines; Vercel must use a writable temp cache, not `node_modules`.
 - FAQ and product saves must remain usable even if vector generation fails.
 - Do not let a no-order status flow block FAQ/product answers. `order_not_found` handoff is a fallback after retrieval cannot answer.
+- If no FAQ, product, retrieval answer, or Smart Flow reply matches a customer
+  message, ask before escalating. The webhook sends the prompt
+  "Sorry, I didn't understand. Do you want me to add a human to resolve your
+  issue?" with Yes/No buttons and stores
+  `bot_state.awaiting_human_confirmation`.
+- Only a Yes response to that unknown-message prompt should create a human
+  handoff. No responses clear the pending state and ask the customer to
+  rephrase.
 - Keep `invalidateTenantVectorCache()` calls when FAQ, phrasing, product, or bot-setting changes affect retrieval.
 - The Knowledge Base list API returns `{ faqs: [...] }` because the frontend consumes `data.faqs`.
 - The Knowledge Base test console route is `POST /api/v1/knowledge-base/test`.
@@ -38,6 +46,9 @@ available and deterministic lexical matching as the fallback.
 - Vercel functions are stateless; local model warmup can happen again after cold starts.
 - Vercel's `/var/task` bundle is read-only. `smartResponder.js` points Transformers.js at `os.tmpdir()/narmada-transformers-cache`; only override it with `TRANSFORMERS_CACHE_DIR` when the target path is writable.
 - Order-status intent can match broad delivery/payment/order wording. When no order exists for that phone, the handoff must be deferred so FAQ/product retrieval can answer policy questions first.
+- Unknown-message handoff confirmation is a webhook concern, not a Smart
+  Responder match. If you change no-match behavior, read
+  `whatsapp-webhook.md` and keep the pending state persisted in MongoDB.
 - If vectors are empty because a previous deployment skipped embedding, use the Settings re-embed action.
 - Do not rename the persisted `bot_settings` field without a migration; it is internal state even though the UI says Smart Automation.
 
@@ -50,6 +61,7 @@ available and deterministic lexical matching as the fallback.
 - `scoreTextMatch()` behavior for text-only FAQ/product matching.
 - Serverless-safe Transformers.js cache configuration for local model downloads.
 - No-order Smart Flow fallback behavior before human handoff.
+- Unknown-message ask-before-handoff confirmation behavior.
 - Absence of external provider key requirements in active source and product docs.
 
 Run:
@@ -63,5 +75,6 @@ npm test
 
 - `ARCHITECTURE.md` for the full system shape.
 - `DEPLOYMENT.md` for `MONGO_URI` setup.
+- `whatsapp-webhook.md` for inbound message, pending confirmation, and handoff state flow.
 - `testing.md` for verification commands.
 - `security.md` for secret masking and webhook concerns.

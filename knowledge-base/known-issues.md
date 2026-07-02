@@ -2,6 +2,39 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-028: Chat Inbox Required Manual Refresh On Vercel
+**Status**: Resolved
+**Severity**: High
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: Agents had to refresh the browser to see new inbound/outbound Chat Inbox messages and conversation state changes.
+**Root Cause**: The frontend had removed polling and relied on Socket.IO events, but the Vercel Express app is deployed as serverless functions and does not initialize or maintain a long-lived Socket.IO server for the exported app.
+**Workaround**: None needed after this fix. Before the fix, manually refresh the browser to pick up changes.
+**Fix**: Added a lightweight Chat Inbox polling fallback that refreshes conversations and the selected thread every five seconds while the tab is visible, and immediately refreshes on focus/visibility return.
+**Regression Test**: `backend/test/regression.test.js` test `Chat Inbox has a polling fallback when Vercel sockets are unavailable`.
+
+## ISSUE-027: Support Feedback Replies Triggered Smart Automation
+**Status**: Resolved
+**Severity**: Medium
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: When a customer tapped Good/Bad on the "Your support chat has been resolved" feedback prompt, the bot could treat that rating as a new customer message and force an unrelated automated reply.
+**Root Cause**: The webhook converted interactive feedback button replies into plain body text, saved them, and then continued into the normal Smart Automation branch. There was no terminal feedback-handler before bot processing.
+**Workaround**: None needed after this fix.
+**Fix**: Added a support feedback parser for `feedback_good` and `feedback_bad`, stores the latest rating under `bot_state.last_support_feedback`, sends "Thank you for your feedback.", emits a chat update, and stops before Smart Automation.
+**Regression Test**: `backend/test/regression.test.js` test `support feedback button replies are acknowledged without Smart Automation`.
+
+## ISSUE-026: Unmatched Messages Needed Confirmation Before Human Handoff
+**Status**: Resolved
+**Severity**: Medium
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: When Smart Automation did not understand a customer message, the flow either left the customer with no recovery prompt or could escalate to a human-style handoff without an explicit customer confirmation.
+**Root Cause**: The webhook had no dedicated unknown-message confirmation state. Unanswered messages were only logged for learning, while handoff state was reserved for Smart Flow handoff replies.
+**Workaround**: None needed after this fix.
+**Fix**: Added a Yes/No confirmation prompt for no-match replies, persisted the pending prompt in `conversation.bot_state.awaiting_human_confirmation`, and moved `needs_human`/`bot_paused` escalation behind a Yes response.
+**Regression Test**: `backend/test/regression.test.js` test `Smart Automation asks before escalating unmatched messages to a human`.
+
 ## ISSUE-025: Duplicate Resolve Actions Sent Two Feedback Requests
 **Status**: Resolved
 **Severity**: High

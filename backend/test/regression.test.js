@@ -104,6 +104,85 @@ test('Smart Automation tries FAQ retrieval before no-order human handoff', () =>
   assert.match(responderSource, /return legacyReply \|\| deferredFlowReply/);
 });
 
+test('Smart Automation asks before escalating unmatched messages to a human', async () => {
+  const webhookSource = readRepoFile('backend/src/routes/webhook.js');
+  const {
+    HUMAN_HANDOFF_CONFIRMATION_PROMPT,
+    buildHumanHandoffConfirmationPrompt,
+    parseHumanHandoffConfirmationReply,
+  } = await importFromBackend('src/services/humanHandoffConfirmation.js');
+
+  assert.equal(
+    HUMAN_HANDOFF_CONFIRMATION_PROMPT,
+    "Sorry, I didn't understand. Do you want me to add a human to resolve your issue?"
+  );
+  assert.deepEqual(buildHumanHandoffConfirmationPrompt().action.buttons.map((button) => button.reply.id), [
+    'request_human_yes',
+    'request_human_no',
+  ]);
+
+  assert.equal(parseHumanHandoffConfirmationReply({ bodyText: 'yes' }), 'yes');
+  assert.equal(parseHumanHandoffConfirmationReply({ bodyText: 'No thanks' }), 'no');
+  assert.equal(
+    parseHumanHandoffConfirmationReply({
+      interactive: { type: 'button_reply', button_reply: { id: 'request_human_yes', title: 'Yes' } },
+    }),
+    'yes'
+  );
+  assert.equal(parseHumanHandoffConfirmationReply({ bodyText: 'where is my order?' }), null);
+
+  assert.match(webhookSource, /parseHumanHandoffConfirmationReply/);
+  assert.match(webhookSource, /awaiting_human_confirmation/);
+  assert.match(webhookSource, /if \(confirmationReply === 'yes'\)/);
+  assert.match(webhookSource, /handoff_reason = 'customer_confirmed_handoff'/);
+  assert.match(webhookSource, /if \(confirmationReply === 'no'\)/);
+  assert.match(webhookSource, /buildHumanHandoffConfirmationPrompt\(\)/);
+  assert.match(webhookSource, /interactionType:\s*'human_handoff_confirmation'/);
+});
+
+test('support feedback button replies are acknowledged without Smart Automation', async () => {
+  const webhookSource = readRepoFile('backend/src/routes/webhook.js');
+  const chatRouteSource = readRepoFile('backend/src/routes/whatsapp-chat.js');
+  const {
+    SUPPORT_FEEDBACK_THANK_YOU,
+    parseSupportFeedbackReply,
+  } = await importFromBackend('src/services/supportFeedback.js');
+
+  assert.match(chatRouteSource, /id:\s*['"]feedback_good['"]/);
+  assert.match(chatRouteSource, /id:\s*['"]feedback_bad['"]/);
+  assert.equal(SUPPORT_FEEDBACK_THANK_YOU, 'Thank you for your feedback.');
+  assert.equal(
+    parseSupportFeedbackReply({
+      interactive: { type: 'button_reply', button_reply: { id: 'feedback_good', title: 'Good' } },
+    }),
+    'good'
+  );
+  assert.equal(parseSupportFeedbackReply({ button: { payload: 'feedback_bad', text: 'Bad' } }), 'bad');
+  assert.equal(parseSupportFeedbackReply({ bodyText: 'Good' }), null);
+
+  assert.match(webhookSource, /parseSupportFeedbackReply/);
+  assert.match(webhookSource, /const supportFeedbackRating = parseSupportFeedbackReply/);
+  assert.match(webhookSource, /last_support_feedback/);
+  assert.match(webhookSource, /SUPPORT_FEEDBACK_THANK_YOU/);
+  assert.match(webhookSource, /support_feedback_received/);
+  assert.match(webhookSource, /continue;\s*\n\s*}\s*\n\s*const botSettings = setting\.bot_settings/);
+});
+
+test('Chat Inbox has a polling fallback when Vercel sockets are unavailable', () => {
+  const chatComponentSource = readRepoFile('frontend/src/components/WhatsAppChat.jsx');
+
+  assert.match(chatComponentSource, /CHAT_INBOX_REFRESH_MS\s*=\s*5000/);
+  assert.match(chatComponentSource, /activeFilterRef/);
+  assert.match(chatComponentSource, /fetchConversationsRef/);
+  assert.match(chatComponentSource, /fetchChatMessagesRef/);
+  assert.match(chatComponentSource, /refreshChatInbox/);
+  assert.match(chatComponentSource, /setInterval\(refreshChatInbox,\s*CHAT_INBOX_REFRESH_MS\)/);
+  assert.match(chatComponentSource, /document\.addEventListener\('visibilitychange'/);
+  assert.match(chatComponentSource, /window\.addEventListener\('focus'/);
+  assert.match(chatComponentSource, /fetchChatMessagesRef\.current\(currentConversationId\)/);
+  assert.doesNotMatch(chatComponentSource, /Polling removed in favor of WebSockets managed in store\.js/);
+});
+
 test('smart responder can score text-only FAQs when vectors are unavailable', async () => {
   const { scoreTextMatch } = await importFromBackend('src/services/smartResponder.js');
 

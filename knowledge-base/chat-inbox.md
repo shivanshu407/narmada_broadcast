@@ -30,6 +30,10 @@ handoffs, teach missed answers into Smart FAQs, and inspect WhatsApp media.
 - `PATCH /conversations/:id/handoff/resolve` is the Resolve Handoff contract.
   It must clear `needs_human`, clear `bot_paused`, clear `handoff_reason`, and
   optionally send the same feedback request.
+- Unknown-message Smart Automation misses should not appear in Needs Human until
+  the customer taps or types Yes on the webhook confirmation prompt. That Yes
+  path sets `needs_human`, `bot_paused`, and `handoff_reason =
+  'customer_confirmed_handoff'`.
 - When `needs_human` is active, the UI must expose Resolve Handoff as the only
   feedback-sending close action. Do not show the generic Resolve Chat button in
   that state.
@@ -50,6 +54,12 @@ handoffs, teach missed answers into Smart FAQs, and inspect WhatsApp media.
   a Smart FAQ through `teachFromConversation()`.
 - Handoff state belongs in MongoDB, not localStorage, because webhook
   auto-reply behavior depends on it.
+- Support-resolution feedback buttons are handled by the webhook as terminal
+  events. Good/Bad ratings should receive a thank-you acknowledgement and must
+  not enter Smart Automation as new prompts.
+- Chat Inbox keeps Socket.IO event handling where available, but also polls as
+  a Vercel-safe fallback every five seconds while the tab is visible. Do not
+  remove polling unless the deployment gets a durable realtime channel.
 - Keep the compact header classes (`chat-inbox-compact-header`,
   `chat-inbox-heading`, `chat-inbox-compact-subtitle`) aligned with the main
   broadcast platform unless the client asks for a separate visual treatment.
@@ -72,6 +82,11 @@ handoffs, teach missed answers into Smart FAQs, and inspect WhatsApp media.
 - A conversation can be both `needs_human` and `bot_paused`. Resolve Handoff owns
   that state. The generic bot-pause support resolve must not send feedback for
   handoff conversations or already-resumed conversations.
+- `bot_state.awaiting_human_confirmation` is separate from `needs_human`; do not
+  show Needs Human UI for pending confirmation alone.
+- Vercel serverless functions do not maintain the Socket.IO server used by
+  non-serverless hosts. Frontend polling is required for fresh messages on the
+  live Vercel app.
 - Uploaded local media is serverless-temp backed; persistent media storage is
   not yet implemented for Vercel.
 - Older checkout orders may not have `tenant_id`; the commerce filter keeps a
@@ -86,6 +101,11 @@ handoffs, teach missed answers into Smart FAQs, and inspect WhatsApp media.
 - Handoff resolution clearing `needs_human`, `bot_paused`, and `handoff_reason`.
 - Single feedback-sending resolve action for handoffs, including the backend
   guard against duplicate support-feedback sends.
+- Unknown-message confirmation only creating handoff state after a Yes response.
+- Support feedback button replies being acknowledged and stopped before Smart
+  Automation.
+- Vercel-safe Chat Inbox polling fallback for conversation list and selected
+  thread refresh.
 - Teach-from-chat route coverage.
 - Persisted `bot_paused` behavior and webhook pause checks.
 - Compact-header UI class contracts and Mongo-safe chat date formatting.
@@ -102,6 +122,7 @@ npm test
 ## Related KB Files
 
 - `chatbot.md` for Smart Automation matching, handoff generation, and teaching.
+- `whatsapp-webhook.md` for inbound confirmation prompt handling.
 - `frontend.md` for app shell and UI conventions.
 - `hosted-checkout.md` for checkout order states used by commerce filters.
 - `security.md` for auth, secret handling, and server-side handoff state.

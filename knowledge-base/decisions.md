@@ -2,6 +2,33 @@
 
 This document logs the architectural choices made during the development of the WhatsApp Broadcast SaaS.
 
+## Decision: Vercel Chat Inbox Uses Polling Fallback In Addition To Socket Events
+**Date**: 2026-07-02
+**Status**: Accepted
+**Context**: The Narmada deployment runs on Vercel serverless functions. Socket.IO support depends on a long-lived server initialized outside the exported Express app, so relying only on socket events caused agents to miss new messages until manual refresh.
+**Decision**: Keep the existing Socket.IO client path for hosts that support it, but add a Chat Inbox polling fallback that refreshes the conversation list and selected thread every five seconds while the tab is visible, plus immediate refresh on focus or visibility return.
+**Alternatives Considered**: Remove Socket.IO entirely, poll the whole app globally, or require a separate realtime server. Removing sockets would regress non-Vercel hosts, global polling would waste requests outside Chat Inbox, and a separate realtime server is unnecessary for this single-client deployment.
+**Consequences**: Vercel users see fresh chat data without manual refresh. Chat Inbox makes small recurring API requests while open; if volume grows substantially, revisit with a durable realtime channel or event stream.
+**Superseded By**:
+
+## Decision: Support Feedback Replies Are Terminal Webhook Events
+**Date**: 2026-07-02
+**Status**: Accepted
+**Context**: Feedback buttons are not customer questions. Passing Good/Bad replies into Smart Automation made the bot answer ratings as if they were support queries.
+**Decision**: Treat `feedback_good` and `feedback_bad` button replies as terminal webhook events. Store the rating in `conversation.bot_state.last_support_feedback`, send a short thank-you response, emit a chat update, and skip Smart Automation.
+**Alternatives Considered**: Let Smart Automation learn a FAQ for Good/Bad, or silently store the rating with no customer response. FAQ learning would train noise into automation, and silent handling gives no acknowledgement after the customer taps a button.
+**Consequences**: Ratings are no longer added to the unanswered queue or matched against FAQs. Customers get a clear acknowledgement, and the support workflow remains closed.
+**Superseded By**:
+
+## Decision: Unknown Smart Automation Misses Require Customer Confirmation Before Handoff
+**Date**: 2026-07-02
+**Status**: Accepted
+**Context**: Smart Automation can receive random strings or unsupported questions that do not match FAQs, products, Smart Flows, or retrieval. Immediately setting `needs_human` for those misses creates unnecessary support handoffs and makes the bot look more aggressive than helpful.
+**Decision**: Store unmatched-message fallback as a pending confirmation in `conversation.bot_state.awaiting_human_confirmation` and send WhatsApp Yes/No buttons. Only a Yes response sets `needs_human`, pauses the bot, records `handoff_reason = 'customer_confirmed_handoff'`, and emits `handoff_requested`. A No response clears the pending state and asks the customer to rephrase.
+**Alternatives Considered**: Keep silent logging only, or immediately hand off every miss. Silent logging gives customers no recovery path. Immediate handoff floods the Needs Human queue and contradicts the user-facing ask-before-handoff requirement.
+**Consequences**: The Needs Human queue now represents customer-confirmed unknown-message escalations for this path. Bot learning still records unanswered messages, and operators are only pulled in after customer consent.
+**Superseded By**:
+
 ## Decision: Handoff Resolve Owns Handoff Feedback
 **Date**: 2026-07-02
 **Status**: Accepted

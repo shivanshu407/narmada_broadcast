@@ -24,7 +24,7 @@
 
 As of 2026-07-02:
 
-- PASS - `cd backend && npm test` (25 tests).
+- PASS - `cd backend && npm test` (28 tests).
 - PASS - backend PowerShell `node --check` sweep across `backend/src/**/*.js`.
 - PASS - `cd frontend && npm run lint` with 10 warnings and 0 errors.
 - PASS - `cd frontend && npm run build`.
@@ -53,10 +53,16 @@ Frontend automated component tests are not configured yet. Until they exist, kee
 - Chat Inbox handoff behavior must cover server-side `needs_human=1` filtering, Resolve Handoff clearing server state, and teach-from-chat route contracts.
 - Chat Inbox handoff UI must cover that handoff conversations expose only one feedback-sending resolve action.
 - Chat Inbox UI/date behavior must cover compact header class contracts and Mongo ISO timestamps not rendering as `Invalid Date`.
+- Chat Inbox freshness must cover the Vercel-safe polling fallback so new
+  conversations and selected-thread messages appear without browser refresh.
 - Chat Inbox commerce filters must cover server-side `filter=paid|unpaid_orders|abandoned_carts`, `filter_counts`, and paid/unpaid/abandoned conversation chips.
 - WhatsApp customer self-service actions must stay tenant-scoped and phone-scoped when acting on orders; cancel-order payloads must never update an order using only `tenant_id` and `id`.
 - WhatsApp support contact cards must use a configured tenant phone number; do not send placeholder or sample phone numbers to customers.
 - Smart Automation must not hand off no-order customers before trying FAQ/product retrieval.
+- Smart Automation unmatched-message fallback must ask the customer before
+  creating a human handoff, and only a Yes response should set `needs_human`.
+- Support-resolution feedback button replies must be acknowledged and must not
+  enter Smart Automation as new customer prompts.
 - Broadcast targeting must cover all recipient types, including tags, labels, and custom selections.
 - Settings must cover secret masking so tokens and payment secrets are not rehydrated into browser form state after reload.
 

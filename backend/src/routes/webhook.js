@@ -8,6 +8,15 @@ import { emitToTenant } from '../services/websocket.js';
 import { normalizePhone, sendTextMessage, sendMediaMessage, sendInteractiveMessage } from '../services/whatsapp.js';
 import { flagEnabled } from '../config/botConfig.js';
 import { initDatabase } from '../database.js';
+import {
+    HUMAN_HANDOFF_CONFIRMATION_PROMPT,
+    buildHumanHandoffConfirmationPrompt,
+    parseHumanHandoffConfirmationReply,
+} from '../services/humanHandoffConfirmation.js';
+import {
+    SUPPORT_FEEDBACK_THANK_YOU,
+    parseSupportFeedbackReply,
+} from '../services/supportFeedback.js';
 
 const router = Router();
 
@@ -212,13 +221,155 @@ router.post('/', async (req, res) => {
                             continue;
                         }
 
+                        const supportFeedbackRating = parseSupportFeedbackReply({
+                            interactive: msg.interactive,
+                            button: msg.button,
+                        });
+                        if (supportFeedbackRating) {
+                            conversation.bot_state = {
+                                ...(conversation.bot_state || {}),
+                                last_support_feedback: {
+                                    rating: supportFeedbackRating,
+                                    received_at: new Date().toISOString(),
+                                    message_id: newMsg._id.toString(),
+                                },
+                            };
+                            conversation.markModified('bot_state');
+
+                            const result = await sendTextMessage(fromPhone, SUPPORT_FEEDBACK_THANK_YOU, setting);
+                            if (result && result.messageId) {
+                                await WhatsAppChatMessage.create({
+                                    tenant_id: tenantId,
+                                    conversation_id: conversation._id,
+                                    direction: 'outbound',
+                                    message_type: 'text',
+                                    body: SUPPORT_FEEDBACK_THANK_YOU,
+                                    provider_message_id: result.messageId,
+                                    status: 'sent'
+                                });
+                                conversation.last_message_text = SUPPORT_FEEDBACK_THANK_YOU;
+                                conversation.last_message_at = new Date();
+                                conversation.unread_count = 0;
+                            }
+
+                            await conversation.save();
+                            emitToTenant(tenantId, 'chat_updated', {
+                                type: 'support_feedback_received',
+                                conversationId: conversation._id.toString(),
+                                rating: supportFeedbackRating,
+                            });
+                            continue;
+                        }
+
+                        const botSettings = setting.bot_settings || {};
+                        const awaitingHumanConfirmation = Boolean(conversation.bot_state?.awaiting_human_confirmation);
+                        if (awaitingHumanConfirmation) {
+                            const confirmationReply = parseHumanHandoffConfirmationReply({
+                                bodyText,
+                                interactive: msg.interactive,
+                                button: msg.button,
+                            });
+
+                            if (confirmationReply === 'yes') {
+                                const handoffText = 'I have notified the store team. A person will join this chat shortly.';
+                                conversation.needs_human = true;
+                                conversation.bot_paused = true;
+                                conversation.handoff_reason = 'customer_confirmed_handoff';
+                                conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: false };
+                                conversation.markModified('bot_state');
+                                await conversation.save();
+                                emitToTenant(tenantId, 'handoff_requested', {
+                                    conversationId: conversation._id.toString(),
+                                    reason: 'customer_confirmed_handoff',
+                                });
+
+                                const result = await sendTextMessage(fromPhone, handoffText, setting);
+                                if (result && result.messageId) {
+                                    await WhatsAppChatMessage.create({
+                                        tenant_id: tenantId,
+                                        conversation_id: conversation._id,
+                                        direction: 'outbound',
+                                        message_type: 'text',
+                                        body: handoffText,
+                                        provider_message_id: result.messageId,
+                                        status: 'sent'
+                                    });
+                                    conversation.last_message_text = handoffText.substring(0, 100);
+                                    conversation.last_message_at = new Date();
+                                    conversation.unread_count = 0;
+                                    await conversation.save();
+                                    emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+                                }
+
+                                if (flagEnabled(botSettings, 'learning')) {
+                                    try {
+                                        const { logBotInteraction } = await import('../services/botLearning.js');
+                                        await logBotInteraction({
+                                            tenantId,
+                                            conversationId: conversation._id.toString(),
+                                            phone: fromPhone,
+                                            interactionType: 'handoff_requested',
+                                            intent: 'human_handoff_confirmation',
+                                            outcome: 'confirmed',
+                                            metadata: { source: 'unknown_message_confirmation' },
+                                        });
+                                    } catch (e) {}
+                                }
+                                continue;
+                            }
+
+                            if (confirmationReply === 'no') {
+                                const retryText = "No problem. Please rephrase your question and I'll try again.";
+                                conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: false };
+                                conversation.markModified('bot_state');
+                                await conversation.save();
+
+                                const result = await sendTextMessage(fromPhone, retryText, setting);
+                                if (result && result.messageId) {
+                                    await WhatsAppChatMessage.create({
+                                        tenant_id: tenantId,
+                                        conversation_id: conversation._id,
+                                        direction: 'outbound',
+                                        message_type: 'text',
+                                        body: retryText,
+                                        provider_message_id: result.messageId,
+                                        status: 'sent'
+                                    });
+                                    conversation.last_message_text = retryText.substring(0, 100);
+                                    conversation.last_message_at = new Date();
+                                    conversation.unread_count = 0;
+                                    await conversation.save();
+                                    emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+                                }
+
+                                if (flagEnabled(botSettings, 'learning')) {
+                                    try {
+                                        const { logBotInteraction } = await import('../services/botLearning.js');
+                                        await logBotInteraction({
+                                            tenantId,
+                                            conversationId: conversation._id.toString(),
+                                            phone: fromPhone,
+                                            interactionType: 'human_handoff_confirmation',
+                                            intent: 'human_handoff_confirmation',
+                                            outcome: 'declined',
+                                            metadata: { source: 'unknown_message_confirmation' },
+                                        });
+                                    } catch (e) {}
+                                }
+                                continue;
+                            }
+
+                            conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: false };
+                            conversation.markModified('bot_state');
+                            await conversation.save();
+                        }
+
                         // --- AI Bot Smart Responder Logic ---
                         if (conversation.bot_paused) {
                             console.log(`[Webhook] Bot paused for conversation #${conversation._id}. Skipping automated reply.`);
                             continue;
                         }
 
-                        const botSettings = setting.bot_settings || {};
                         const automationEnabled = botSettings.enabled !== false;
                         if (!automationEnabled) {
                             continue;
@@ -470,17 +621,55 @@ router.post('/', async (req, res) => {
                                         } catch (e) {}
                                     }
                                 }
-                            } else if (flagEnabled(botSettings, 'learning')) {
+                            } else {
                                 try {
-                                    const { logUnanswered } = await import('../services/botLearning.js');
-                                    await logUnanswered({
-                                        tenantId,
-                                        conversationId: conversation._id.toString(),
-                                        phone: fromPhone,
-                                        messageBody: bodyText,
-                                        metadata: { messageType: msg.type },
-                                    });
+                                    if (flagEnabled(botSettings, 'learning')) {
+                                        const { logUnanswered } = await import('../services/botLearning.js');
+                                        await logUnanswered({
+                                            tenantId,
+                                            conversationId: conversation._id.toString(),
+                                            phone: fromPhone,
+                                            messageBody: bodyText,
+                                            metadata: { messageType: msg.type },
+                                        });
+                                    }
                                 } catch (e) {}
+
+                                const confirmationPrompt = buildHumanHandoffConfirmationPrompt();
+                                const result = await sendInteractiveMessage(fromPhone, confirmationPrompt, setting);
+                                if (result && result.messageId) {
+                                    await WhatsAppChatMessage.create({
+                                        tenant_id: tenantId,
+                                        conversation_id: conversation._id,
+                                        direction: 'outbound',
+                                        message_type: 'interactive',
+                                        body: HUMAN_HANDOFF_CONFIRMATION_PROMPT,
+                                        provider_message_id: result.messageId,
+                                        status: 'sent'
+                                    });
+                                    conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: true };
+                                    conversation.markModified('bot_state');
+                                    conversation.last_message_text = HUMAN_HANDOFF_CONFIRMATION_PROMPT.substring(0, 100);
+                                    conversation.last_message_at = new Date();
+                                    conversation.unread_count = 0;
+                                    await conversation.save();
+                                    emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+
+                                    if (flagEnabled(botSettings, 'learning')) {
+                                        try {
+                                            const { logBotInteraction } = await import('../services/botLearning.js');
+                                            await logBotInteraction({
+                                                tenantId,
+                                                conversationId: conversation._id.toString(),
+                                                phone: fromPhone,
+                                                interactionType: 'human_handoff_confirmation',
+                                                intent: 'unknown_message',
+                                                outcome: 'awaiting_customer_confirmation',
+                                                metadata: { messageType: msg.type, inboundMessageId: newMsg._id.toString() },
+                                            });
+                                        } catch (e) {}
+                                    }
+                                }
                             }
                         } catch (botErr) {
                             console.error('[Bot] Failed to run Smart Responder:', botErr.message);
