@@ -2,6 +2,17 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-033: Gibberish Bot Misses Polluted Suggestions Queue
+**Status**: Resolved
+**Severity**: Medium
+**Discovered**: 2026-07-03
+**Resolved**: 2026-07-03
+**Symptom**: Random customer text such as `fdrdfvdf` could appear in Top Unanswered and the Suggestions Queue as though it were a meaningful FAQ gap.
+**Root Cause**: All unmatched Smart Automation messages were logged with the same `status: 'new'`, and the Build endpoint clustered every new unanswered row without distinguishing gibberish, chatter, direct handoff requests, or meaningful business questions.
+**Workaround**: None needed after this fix. Before deploy, manually ignore junk suggestions and avoid teaching them as FAQs.
+**Fix**: Added deterministic no-match triage, stored `BotUnanswered.learning_status`, sent plain retry/acknowledgement replies for noise/chatter, kept Yes/No human confirmation only for meaningful misses, made Build cluster only `learning_status: 'candidate'`, and made Build close stale FAQ-gap suggestions that no longer have a candidate unanswered row.
+**Regression Test**: `backend/test/regression.test.js` tests `Smart Automation triages no-match messages before learning or handoff` and `Suggestions Queue Build excludes ignored noise from FAQ-gap candidates`.
+
 ## ISSUE-032: WhatsApp Catalogue Descriptions Published Raw HTML And Some Live Prices Stayed Truncated
 **Status**: Resolved
 **Severity**: High

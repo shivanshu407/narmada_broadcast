@@ -22,16 +22,13 @@
 
 ## Current Session Status
 
-As of 2026-07-02:
+As of 2026-07-03:
 
-- PASS - `cd backend && npm test` (31 tests).
+- PASS - `cd backend && npm test` (33 tests).
 - PASS - backend PowerShell `node --check` sweep across `backend/src/**/*.js`.
 - PASS - `cd frontend && npm run lint` with 10 warnings and 0 errors.
 - PASS - `cd frontend && npm run build`.
 - PASS - `npm audit --audit-level=high` in both `backend/` and `frontend/`.
-- PASS - live API repair verification showed 0 product descriptions with HTML,
-  corrected Automatic Dispenser/Mini Diffuser/Diffuser prices, and live
-  `Publish to WhatsApp` queued 27 products with 0 failures.
 - PASS - `git diff --check`.
 
 ## Test File Conventions
@@ -66,6 +63,9 @@ Frontend automated component tests are not configured yet. Until they exist, kee
 - Smart Automation must not hand off no-order customers before trying FAQ/product retrieval.
 - Smart Automation unmatched-message fallback must ask the customer before
   creating a human handoff, and only a Yes response should set `needs_human`.
+- Smart Automation no-match triage must keep gibberish/repeated nonsense out
+  of `needs_human`, human-confirmation prompts, Top Unanswered, and Suggestions
+  Queue Build.
 - Broadcast targeting must cover all recipient types, including tags, labels, and custom selections.
 - Catalogue sync must cover Meta `retailer_id` imports, comma-grouped Meta price parsing, WhatsApp publish queueing, and visible failure reporting when Meta rejects a publish request.
 - Catalogue formatting must cover stripping HTML descriptions before storage,

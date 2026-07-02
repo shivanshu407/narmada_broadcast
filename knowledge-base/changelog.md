@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-07-03 — Add No-Match Triage Before Suggestions Queue
+**What**: Added deterministic Smart Automation no-match triage and candidate-only Suggestions Queue Build filtering.
+**Why**: Gibberish or repeated nonsense such as `fdrdfvdf` and `LALALALA` should not be treated as FAQ gaps, while real business questions still need a recovery path and learning signal.
+**Impact**: Noise/chatter no-matches now get a plain retry or lightweight acknowledgement instead of a human-confirmation prompt. Meaningful no-matches still ask before human handoff. `BotUnanswered.learning_status` now controls learning, Top Unanswered, and Build; Build re-triages legacy rows and closes stale FAQ-gap suggestions that no longer have candidate unanswered rows.
+**Files Changed**: `backend/src/services/messageTriage.js`, `backend/src/models/BotUnanswered.js`, `backend/src/services/botLearning.js`, `backend/src/routes/webhook.js`, `backend/test/regression.test.js`, `docs/superpowers/plans/2026-07-03-smart-automation-miss-triage.md`, `knowledge-base/changelog.md`, `knowledge-base/known-issues.md`, `knowledge-base/decisions.md`, `knowledge-base/chatbot.md`, `knowledge-base/whatsapp-webhook.md`, `knowledge-base/testing.md`, `knowledge-base/active-context.md`
+**Tests**: PASS - watched new backend regressions fail before implementation; PASS - `cd backend && npm test` (33 tests); PASS - backend PowerShell `node --check` sweep across `backend/src/**/*.js`; PASS - `cd frontend && npm run lint` (10 warnings, 0 errors); PASS - `cd frontend && npm run build`; PASS - `npm audit --audit-level=high` in both `backend/` and `frontend/`; PASS - `git diff --check`.
+**Commit**: Pending
+
+- Added `messageTriage.js` for provider-free classification of no-match messages into noise, chatter, candidate, handoff, or ignored states.
+- Added `learning_status` to `BotUnanswered` and made analytics/Build use only `candidate` rows for operator-facing FAQ gaps.
+- Wired webhook fallback so noise/chatter do not set `awaiting_human_confirmation`, `needs_human`, or `bot_paused`.
+- Made Build re-triage old unanswered rows and close stale FAQ-gap suggestions when their source row is no longer a candidate.
+
+## 2026-07-03 — Verify Suggestions Queue Build Button
+**What**: Traced and live-tested the Smart Automation Suggestions Queue Build button.
+**Why**: The operator needed to know whether the Suggestions Queue works and what the Build action does.
+**Impact**: No product behavior changed. Documentation now records that Build clusters `BotUnanswered` rows into open `BotSuggestion` FAQ-gap records and does not automatically create FAQ answers.
+**Files Changed**: `knowledge-base/chatbot.md`, `knowledge-base/changelog.md`, `knowledge-base/active-context.md`
+**Tests**: PASS - live login to `https://broadcast-gilt.vercel.app/`; PASS - `GET /api/v1/tenant-settings/smart-automation/suggestions` returned one open `fdrdfvdf` suggestion; PASS - `GET /api/v1/tenant-settings/smart-automation/analytics` returned `fdrdfvdf` as top unanswered; PASS - `POST /api/v1/tenant-settings/smart-automation/learning/cluster` returned HTTP 200 and one suggestion; PASS - after reload, Suggestions Queue still contained `fdrdfvdf` with source count 1; PASS - `git diff --check`.
+**Commit**: Pending
+
+- Confirmed the frontend Build button calls `clusterSmartAutomationSuggestions()` from the store.
+- Confirmed the backend clusters unanswered messages by normalized text and upserts `faq_gap` suggestions.
+- Documented that the queue is operator-facing learning data, not an auto-answer generator.
+
 ## 2026-07-02 — Clean Catalogue Descriptions And Repair Live Prices
 **What**: Stripped product description HTML before storage/publishing and repaired the live Narmada product rows that still had comma-truncated prices.
 **Why**: Customer-side WhatsApp catalogue descriptions were showing raw `<ul><li><b>...` HTML, and the live Mongo/Meta data still contained prices such as `3`, `23`, and `52` from the earlier comma parser bug.

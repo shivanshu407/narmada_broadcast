@@ -140,6 +140,68 @@ test('Smart Automation asks before escalating unmatched messages to a human', as
   assert.match(webhookSource, /interactionType:\s*'human_handoff_confirmation'/);
 });
 
+test('Smart Automation triages no-match messages before learning or handoff', async () => {
+  const {
+    UNANSWERED_CHATTER_ACK_TEXT,
+    UNANSWERED_NOISE_RETRY_TEXT,
+    triageUnansweredMessage,
+  } = await importFromBackend('src/services/messageTriage.js');
+
+  const noise = triageUnansweredMessage('fdrdfvdf');
+  assert.equal(noise.learningStatus, 'noise');
+  assert.equal(noise.replyAction, 'retry');
+  assert.equal(noise.messageKind, 'noise');
+  assert.ok(noise.qualityScore < 0.35);
+  assert.match(UNANSWERED_NOISE_RETRY_TEXT, /couldn't understand/i);
+
+  const repeatedNonsense = triageUnansweredMessage('LALALALA');
+  assert.equal(repeatedNonsense.learningStatus, 'noise');
+  assert.equal(repeatedNonsense.replyAction, 'retry');
+
+  const candidate = triageUnansweredMessage('what is warranty on diffuser');
+  assert.equal(candidate.learningStatus, 'candidate');
+  assert.equal(candidate.replyAction, 'confirm_handoff');
+  assert.equal(candidate.messageKind, 'business_question');
+  assert.ok(candidate.businessScore >= 0.4);
+
+  const shortBusinessQuestion = triageUnansweredMessage('COD?');
+  assert.equal(shortBusinessQuestion.learningStatus, 'candidate');
+  assert.equal(shortBusinessQuestion.replyAction, 'confirm_handoff');
+
+  const humanRequest = triageUnansweredMessage('human');
+  assert.equal(humanRequest.learningStatus, 'handoff');
+  assert.equal(humanRequest.replyAction, 'direct_handoff');
+
+  const chatter = triageUnansweredMessage('thanks');
+  assert.equal(chatter.learningStatus, 'chatter');
+  assert.equal(chatter.replyAction, 'acknowledge');
+  assert.equal(chatter.messageKind, 'chatter');
+  assert.match(UNANSWERED_CHATTER_ACK_TEXT, /welcome/i);
+});
+
+test('Suggestions Queue Build excludes ignored noise from FAQ-gap candidates', () => {
+  const learningSource = readRepoFile('backend/src/services/botLearning.js');
+  const modelSource = readRepoFile('backend/src/models/BotUnanswered.js');
+  const webhookSource = readRepoFile('backend/src/routes/webhook.js');
+
+  assert.match(modelSource, /learning_status:\s*\{\s*type:\s*String/);
+  assert.match(modelSource, /enum:\s*\['candidate', 'noise', 'chatter', 'handoff', 'resolved', 'ignored'\]/);
+
+  assert.match(learningSource, /learningStatus = 'candidate'/);
+  assert.match(learningSource, /learning_status:\s*learningStatus/);
+  assert.match(learningSource, /\$match:\s*\{\s*tenant_id:\s*tenantId \|\| 'single-tenant',\s*status:\s*'new',\s*learning_status:\s*'candidate'\s*\}/);
+  assert.match(learningSource, /BotUnanswered\.countDocuments\(\{\s*learning_status:\s*'candidate'\s*\}\)/);
+  assert.match(learningSource, /\$match:\s*\{\s*learning_status:\s*'candidate'\s*\}/);
+
+  assert.match(webhookSource, /triageUnansweredMessage\(bodyText\)/);
+  assert.match(webhookSource, /learningStatus:\s*triage\.learningStatus/);
+  assert.match(webhookSource, /UNANSWERED_NOISE_RETRY_TEXT/);
+  assert.match(webhookSource, /UNANSWERED_CHATTER_ACK_TEXT/);
+  assert.match(webhookSource, /triage\.replyAction === 'retry'/);
+  assert.match(webhookSource, /triage\.replyAction === 'acknowledge'/);
+  assert.match(webhookSource, /triage\.replyAction === 'confirm_handoff'/);
+});
+
 test('support feedback button replies are acknowledged without Smart Automation', async () => {
   const webhookSource = readRepoFile('backend/src/routes/webhook.js');
   const chatRouteSource = readRepoFile('backend/src/routes/whatsapp-chat.js');

@@ -18,6 +18,11 @@ import {
     parseSupportFeedbackReply,
 } from '../services/supportFeedback.js';
 import {
+    UNANSWERED_CHATTER_ACK_TEXT,
+    UNANSWERED_NOISE_RETRY_TEXT,
+    triageUnansweredMessage,
+} from '../services/messageTriage.js';
+import {
     productPriceAmount,
     sanitizeProductDescriptionForCatalogue,
 } from '../utils/productCatalogue.js';
@@ -776,6 +781,7 @@ router.post('/', async (req, res) => {
                                     }
                                 }
                             } else {
+                                const triage = triageUnansweredMessage(bodyText);
                                 try {
                                     if (flagEnabled(botSettings, 'learning')) {
                                         const { logUnanswered } = await import('../services/botLearning.js');
@@ -784,30 +790,56 @@ router.post('/', async (req, res) => {
                                             conversationId: conversation._id.toString(),
                                             phone: fromPhone,
                                             messageBody: bodyText,
-                                            metadata: { messageType: msg.type },
+                                            learningStatus: triage.learningStatus,
+                                            triage,
+                                            metadata: { messageType: msg.type, inboundMessageId: newMsg._id.toString() },
                                         });
                                     }
                                 } catch (e) {}
 
-                                const confirmationPrompt = buildHumanHandoffConfirmationPrompt();
-                                const result = await sendInteractiveMessage(fromPhone, confirmationPrompt, setting);
-                                if (result && result.messageId) {
-                                    await WhatsAppChatMessage.create({
-                                        tenant_id: tenantId,
-                                        conversation_id: conversation._id,
-                                        direction: 'outbound',
-                                        message_type: 'interactive',
-                                        body: HUMAN_HANDOFF_CONFIRMATION_PROMPT,
-                                        provider_message_id: result.messageId,
-                                        status: 'sent'
-                                    });
-                                    conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: true };
+                                const sendAutomationText = async (replyText) => {
+                                    const result = await sendTextMessage(fromPhone, replyText, setting);
+                                    if (result && result.messageId) {
+                                        await WhatsAppChatMessage.create({
+                                            tenant_id: tenantId,
+                                            conversation_id: conversation._id,
+                                            direction: 'outbound',
+                                            message_type: 'text',
+                                            body: replyText,
+                                            provider_message_id: result.messageId,
+                                            status: 'sent'
+                                        });
+                                        conversation.last_message_text = replyText.substring(0, 100);
+                                        conversation.last_message_at = new Date();
+                                        conversation.unread_count = 0;
+                                        await conversation.save();
+                                        emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+                                    }
+                                };
+
+                                if (triage.replyAction === 'retry') {
+                                    await sendAutomationText(UNANSWERED_NOISE_RETRY_TEXT);
+                                    continue;
+                                }
+
+                                if (triage.replyAction === 'acknowledge') {
+                                    await sendAutomationText(UNANSWERED_CHATTER_ACK_TEXT);
+                                    continue;
+                                }
+
+                                if (triage.replyAction === 'direct_handoff') {
+                                    const handoffText = 'I have notified the store team. A person will join this chat shortly.';
+                                    conversation.needs_human = true;
+                                    conversation.bot_paused = true;
+                                    conversation.handoff_reason = 'customer_requested_handoff';
+                                    conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: false };
                                     conversation.markModified('bot_state');
-                                    conversation.last_message_text = HUMAN_HANDOFF_CONFIRMATION_PROMPT.substring(0, 100);
-                                    conversation.last_message_at = new Date();
-                                    conversation.unread_count = 0;
                                     await conversation.save();
-                                    emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+                                    emitToTenant(tenantId, 'handoff_requested', {
+                                        conversationId: conversation._id.toString(),
+                                        reason: 'customer_requested_handoff',
+                                    });
+                                    await sendAutomationText(handoffText);
 
                                     if (flagEnabled(botSettings, 'learning')) {
                                         try {
@@ -816,12 +848,51 @@ router.post('/', async (req, res) => {
                                                 tenantId,
                                                 conversationId: conversation._id.toString(),
                                                 phone: fromPhone,
-                                                interactionType: 'human_handoff_confirmation',
-                                                intent: 'unknown_message',
-                                                outcome: 'awaiting_customer_confirmation',
-                                                metadata: { messageType: msg.type, inboundMessageId: newMsg._id.toString() },
+                                                interactionType: 'handoff_requested',
+                                                intent: 'human_request',
+                                                outcome: 'direct_handoff',
+                                                metadata: { messageType: msg.type, inboundMessageId: newMsg._id.toString(), triage },
                                             });
                                         } catch (e) {}
+                                    }
+                                    continue;
+                                }
+
+                                if (triage.replyAction === 'confirm_handoff') {
+                                    const confirmationPrompt = buildHumanHandoffConfirmationPrompt();
+                                    const result = await sendInteractiveMessage(fromPhone, confirmationPrompt, setting);
+                                    if (result && result.messageId) {
+                                        await WhatsAppChatMessage.create({
+                                            tenant_id: tenantId,
+                                            conversation_id: conversation._id,
+                                            direction: 'outbound',
+                                            message_type: 'interactive',
+                                            body: HUMAN_HANDOFF_CONFIRMATION_PROMPT,
+                                            provider_message_id: result.messageId,
+                                            status: 'sent'
+                                        });
+                                        conversation.bot_state = { ...(conversation.bot_state || {}), awaiting_human_confirmation: true };
+                                        conversation.markModified('bot_state');
+                                        conversation.last_message_text = HUMAN_HANDOFF_CONFIRMATION_PROMPT.substring(0, 100);
+                                        conversation.last_message_at = new Date();
+                                        conversation.unread_count = 0;
+                                        await conversation.save();
+                                        emitToTenant(tenantId, 'chat_updated', { type: 'new_message', conversationId: conversation._id.toString() });
+
+                                        if (flagEnabled(botSettings, 'learning')) {
+                                            try {
+                                                const { logBotInteraction } = await import('../services/botLearning.js');
+                                                await logBotInteraction({
+                                                    tenantId,
+                                                    conversationId: conversation._id.toString(),
+                                                    phone: fromPhone,
+                                                    interactionType: 'human_handoff_confirmation',
+                                                    intent: 'unknown_message',
+                                                    outcome: 'awaiting_customer_confirmation',
+                                                    metadata: { messageType: msg.type, inboundMessageId: newMsg._id.toString(), triage },
+                                                });
+                                            } catch (e) {}
+                                        }
                                     }
                                 }
                             }

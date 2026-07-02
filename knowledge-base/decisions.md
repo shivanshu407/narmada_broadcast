@@ -2,6 +2,15 @@
 
 This document logs the architectural choices made during the development of the WhatsApp Broadcast SaaS.
 
+## Decision: No-Match Learning Uses Deterministic Triage Before Suggestions
+**Date**: 2026-07-03
+**Status**: Accepted
+**Context**: Smart Automation no-match events include many different cases: meaningful customer questions, gibberish, repeated nonsense, small talk, direct human requests, and unsupported business questions. Treating every miss as an FAQ gap polluted Top Unanswered and the Suggestions Queue with junk like `fdrdfvdf`.
+**Decision**: Add a provider-free deterministic triage layer for no-match messages. Store `BotUnanswered.learning_status`, reply differently for noise/chatter/candidates/handoff requests, and make Suggestions Queue Build cluster only `learning_status: 'candidate'` rows.
+**Alternatives Considered**: Raise match thresholds only, immediately hand off every miss, or use an external LLM classifier. Threshold-only would not fix learning pollution. Immediate handoff would flood support. External LLM classification was rejected because this single-client product must not require AI provider keys for Smart Automation.
+**Consequences**: Operators see cleaner FAQ-gap suggestions, old junk suggestions can be cleared by pressing Build, and the customer still gets a recovery path for meaningful misses. The deterministic vocabulary will need occasional tuning as real Narmada customer wording appears.
+**Superseded By**:
+
 ## Decision: Meta Catalogue Import Queues WhatsApp Publishing
 **Date**: 2026-07-02
 **Status**: Accepted
