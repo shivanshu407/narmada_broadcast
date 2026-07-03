@@ -2,6 +2,28 @@
 
 A registry of active bugs, limitations, and workarounds.
 
+## ISSUE-033: Gibberish Bot Misses Polluted Suggestions Queue
+**Status**: Resolved
+**Severity**: Medium
+**Discovered**: 2026-07-03
+**Resolved**: 2026-07-03
+**Symptom**: Random customer text such as `fdrdfvdf` could appear in Top Unanswered and the Suggestions Queue as though it were a meaningful FAQ gap.
+**Root Cause**: All unmatched Smart Automation messages were logged with the same `status: 'new'`, and the Build endpoint clustered every new unanswered row without distinguishing gibberish, chatter, direct handoff requests, or meaningful business questions.
+**Workaround**: None needed after this fix. Before deploy, manually ignore junk suggestions and avoid teaching them as FAQs.
+**Fix**: Added deterministic no-match triage, stored `BotUnanswered.learning_status`, sent plain retry/acknowledgement replies for noise/chatter, kept Yes/No human confirmation only for meaningful misses, made Build cluster only `learning_status: 'candidate'`, and made Build close stale FAQ-gap suggestions that no longer have a candidate unanswered row.
+**Regression Test**: `backend/test/regression.test.js` tests `Smart Automation triages no-match messages before learning or handoff` and `Suggestions Queue Build excludes ignored noise from FAQ-gap candidates`.
+
+## ISSUE-032: WhatsApp Catalogue Descriptions Published Raw HTML And Some Live Prices Stayed Truncated
+**Status**: Resolved
+**Severity**: High
+**Discovered**: 2026-07-02
+**Resolved**: 2026-07-02
+**Symptom**: The customer WhatsApp catalogue showed product descriptions beginning with raw HTML such as `<ul><li><b>product type:</b>...`, and some products still showed prices like `3.00`, `23.00`, or `52.00`.
+**Root Cause**: Meta import, manual product edit, Shopify import, catalogue publish, and product bot caption paths passed `description` through without stripping HTML. The earlier comma-price bug had also already poisoned live MongoDB and Meta rows, so a code parser fix alone could not recover prices once Meta had been republished as `3.00 INR` instead of `3,699.00 INR`.
+**Workaround**: None needed after this fix. Before this fix, manually edit affected products in the dashboard to remove HTML and restore full prices, then run `Publish to WhatsApp`.
+**Fix**: Added shared product catalogue formatting helpers, sanitized descriptions across import/store/publish/reply paths, normalized outbound Meta prices, repaired live MongoDB product rows, and queued 27 repaired products to Meta with 0 failures.
+**Regression Test**: `backend/test/regression.test.js` test `Product catalogue publishing sends plain descriptions and normalized prices`.
+
 ## ISSUE-031: Meta Price Strings With Commas Imported As Tiny Amounts
 **Status**: Resolved
 **Severity**: High

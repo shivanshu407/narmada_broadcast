@@ -3,6 +3,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import { embeddingForTenant } from '../config/embeddingConfig.js';
 import { generateEmbedding, dotProduct, normalizeText } from './smartResponder.js';
+import { productPriceAmount } from '../utils/productCatalogue.js';
 
 export const FLOW_INTENTS = {
     order_status: {
@@ -291,7 +292,7 @@ export function formatProductListReply(products = [], filters = {}) {
     const label = filters.category ? `${filters.category} products` : 'matching products';
     const lines = [`I found ${products.length} ${label}:`];
     for (const product of products.slice(0, 5)) {
-        const price = product.selling_price || product.mrp || 0;
+        const price = productPriceAmount(product);
         lines.push(`- ${product.name} - ${formatMoney(price, 'INR')}`);
     }
     lines.push('Tap a product from the catalogue list if available, or reply with your preferred budget.');

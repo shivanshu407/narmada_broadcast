@@ -10,6 +10,7 @@ const BotUnansweredSchema = new mongoose.Schema({
     best_match_id: { type: String, default: null },
     score: { type: Number, default: 0 },
     status: { type: String, default: 'new', index: true },
+    learning_status: { type: String, enum: ['candidate', 'noise', 'chatter', 'handoff', 'resolved', 'ignored'], default: 'candidate', index: true },
     cluster_key: { type: String, default: '' },
     metadata: { type: Object, default: {} },
     created_at: { type: Date, default: Date.now },

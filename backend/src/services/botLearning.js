@@ -5,6 +5,7 @@ import FaqPhrasing from '../models/FaqPhrasing.js';
 import KnowledgeBase from '../models/KnowledgeBase.js';
 import { embeddingForTenant } from '../config/embeddingConfig.js';
 import { generateEmbedding, normalizeText, invalidateTenantVectorCache } from './smartResponder.js';
+import { triageUnansweredMessage } from './messageTriage.js';
 
 function safeRatio(numerator, denominator) {
     const n = Number(numerator) || 0;
@@ -20,10 +21,15 @@ export async function logUnanswered({
     bestMatchType = null,
     bestMatchId = null,
     score = null,
+    learningStatus = 'candidate',
+    triage = null,
     metadata = {},
 }) {
     const normalized = normalizeText(messageBody);
     if (!normalized) return null;
+    learningStatus = ['candidate', 'noise', 'chatter', 'handoff', 'resolved', 'ignored'].includes(learningStatus)
+        ? learningStatus
+        : 'candidate';
 
     const result = await BotUnanswered.create({
         tenant_id: tenantId || 'single-tenant',
@@ -34,7 +40,11 @@ export async function logUnanswered({
         best_match_type: bestMatchType,
         best_match_id: bestMatchId,
         score: score,
-        metadata: metadata || {}
+        learning_status: learningStatus,
+        metadata: {
+            ...(metadata || {}),
+            triage: triage || null,
+        }
     });
     return result._id.toString();
 }
@@ -114,10 +124,24 @@ export async function captureDisambiguationTap({
 }
 
 export async function clusterUnansweredSuggestions(tenantId = 'single-tenant', { limit = 100 } = {}) {
+    const effectiveTenantId = tenantId || 'single-tenant';
     const safeLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 500);
+
+    const legacyRows = await BotUnanswered.find({
+        tenant_id: effectiveTenantId,
+        status: 'new',
+        learning_status: { $exists: false },
+    }).limit(500);
+    for (const row of legacyRows) {
+        const triage = triageUnansweredMessage(row.message_body);
+        row.learning_status = triage.learningStatus;
+        row.metadata = { ...(row.metadata || {}), triage };
+        row.updated_at = new Date();
+        await row.save();
+    }
     
     const rows = await BotUnanswered.aggregate([
-        { $match: { status: 'new' } },
+        { $match: { tenant_id: tenantId || 'single-tenant', status: 'new', learning_status: 'candidate' } },
         {
             $group: {
                 _id: '$normalized_message',
@@ -130,18 +154,36 @@ export async function clusterUnansweredSuggestions(tenantId = 'single-tenant', {
         { $limit: safeLimit }
     ]);
 
+    const candidateKeys = rows.map((row) => row._id).filter(Boolean);
+    await BotSuggestion.updateMany(
+        {
+            tenant_id: effectiveTenantId,
+            suggestion_type: 'faq_gap',
+            status: 'open',
+            'payload.normalized_message': { $nin: candidateKeys },
+        },
+        {
+            $set: {
+                status: 'ignored',
+                updated_at: new Date(),
+                'payload.closed_reason': 'no_candidate_unanswered',
+            },
+        }
+    );
+
     const suggestions = [];
     for (const row of rows) {
         const title = String(row.sample || row._id || 'Unanswered question').slice(0, 255);
         const payload = {
             normalized_message: row._id,
             sample: row.sample,
+            learning_status: 'candidate',
         };
         await BotSuggestion.findOneAndUpdate(
-            { suggestion_type: 'faq_gap', title: title },
+            { tenant_id: effectiveTenantId, suggestion_type: 'faq_gap', title: title },
             {
                 $set: {
-                    tenant_id: tenantId || 'single-tenant',
+                    tenant_id: effectiveTenantId,
                     source_count: row.source_count,
                     payload: payload,
                     status: 'open',
@@ -226,7 +268,7 @@ export async function shadowReplayKnowledgeBase(tenantId = 'single-tenant', botS
 export async function getBotAnalytics(tenantId = 'single-tenant') {
     const [interactions, unanswered, handoffs, faqHits, productHits, taps] = await Promise.all([
         BotInteraction.countDocuments({}),
-        BotUnanswered.countDocuments({}),
+        BotUnanswered.countDocuments({ learning_status: 'candidate' }),
         BotInteraction.countDocuments({ interaction_type: 'handoff_requested' }),
         BotInteraction.countDocuments({ interaction_type: 'faq_answer' }),
         BotInteraction.countDocuments({ interaction_type: { $in: ['product_list', 'product_answer'] } }),
@@ -234,6 +276,7 @@ export async function getBotAnalytics(tenantId = 'single-tenant') {
     ]);
 
     const topUnansweredResult = await BotUnanswered.aggregate([
+        { $match: { learning_status: 'candidate' } },
         { $group: { _id: '$normalized_message', count: { $sum: 1 }, sample: { $first: '$message_body' } } },
         { $sort: { count: -1 } },
         { $limit: 10 }
