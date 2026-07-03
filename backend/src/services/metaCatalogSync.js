@@ -20,7 +20,7 @@ export async function syncProductToMeta(product) {
 
         // Determine availability
         const availability = (product.inventory_available !== false && (product.inventory_quantity === null || product.inventory_quantity > 0)) ? 'in stock' : 'out of stock';
-        
+
         // Ensure image URL is absolute and valid. Fallback to a placeholder if none.
         let imageUrl = product.image_url || product.images?.[0];
         if (!imageUrl) {
@@ -44,7 +44,7 @@ export async function syncProductToMeta(product) {
                         condition: 'new',
                         price: priceString,
                         image_link: imageUrl,
-                        link: 'https://narmada.com', // Meta requires a link
+                        link: 'https://narmadaessence.com/', // Meta requires a link
                         brand: 'Narmada', // Default brand if none exists
                     }
                 }
@@ -61,7 +61,7 @@ export async function syncProductToMeta(product) {
         });
 
         const data = await response.json();
-        
+
         if (!response.ok || data.error) {
             const message = data.error?.message || `Meta API returned HTTP ${response.status}`;
             console.error('[MetaCatalogSync] Meta API Error:', message);
@@ -117,7 +117,7 @@ export async function deleteProductFromMeta(product) {
         });
 
         const data = await response.json();
-        
+
         if (!response.ok || data.error) {
             const message = data.error?.message || `Meta API returned HTTP ${response.status}`;
             console.error('[MetaCatalogSync] Meta API Error on delete:', message);
