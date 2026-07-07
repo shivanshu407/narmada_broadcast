@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-07 - Fix Semantic Routing False Positives for Multilingual e5-small
+**What**: Disabled semantic intent checks for `multilingual-e5-small` in `smartFlows.js` and enforced a strict threshold of `0.82` for legacy semantic FAQ matching.
+**Why**: The `multilingual-e5-small` model compresses gibberish and romanized Hindi tightly into the vector space, resulting in >`0.82` similarity scores against completely unrelated English sentences (e.g. gibberish scoring `0.824` against "where is my order"). This caused extreme false positives, incorrectly triggering order status summaries. Semantic flow intent routing is now skipped for this model, relying purely on lexical fallback.
+**Files Changed**:
+- `backend/src/services/smartFlows.js`
+- `backend/src/services/smartResponder.js`
 
 ## 2026-07-07 - Fix Legacy Smart Responder Prefix and Model Mismatch
 **What**: Updated `handleSmartReplyLegacy` to dynamically apply the tenant's selected embedding model and the required `query: ` prefix.
