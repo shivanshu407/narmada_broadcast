@@ -249,11 +249,11 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
 
     if (retrievalReply) return retrievalReply;
 
-    const legacyReply = await applySmartFlowSlots(await handleSmartReplyLegacy(tenantId, messageBody, chatHistory), context, botSettings);
+    const legacyReply = await applySmartFlowSlots(await handleSmartReplyLegacy(tenantId, messageBody, chatHistory, botSettings), context, botSettings);
     return legacyReply || deferredFlowReply;
 }
 
-async function handleSmartReplyLegacy(tenantId, messageBody, chatHistory = []) {
+async function handleSmartReplyLegacy(tenantId, messageBody, chatHistory = [], botSettings = {}) {
     try {
         const { faqs, products } = await getTenantKnowledge(tenantId);
         if ((!faqs || faqs.length === 0) && (!products || products.length === 0)) {
