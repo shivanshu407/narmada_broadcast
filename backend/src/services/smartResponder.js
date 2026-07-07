@@ -7,8 +7,9 @@ import Product from '../models/Product.js';
 import FaqPhrasing from '../models/FaqPhrasing.js';
 import { MATCH_THRESHOLD, flagEnabled } from '../config/botConfig.js';
 import { sanitizeProductDescriptionForCatalogue } from '../utils/productCatalogue.js';
+import { embeddingForTenant } from '../config/embeddingConfig.js';
 
-const LEGACY_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+const LEGACY_MODEL_ID = 'Xenova/multilingual-e5-small';
 const TRANSFORMERS_CACHE_DIR = process.env.TRANSFORMERS_CACHE_DIR || path.join(os.tmpdir(), 'narmada-transformers-cache');
 const extractors = new Map();
 
@@ -267,7 +268,11 @@ async function handleSmartReplyLegacy(tenantId, messageBody, chatHistory = []) {
 
         let messageVector = null;
         try {
-            messageVector = await generateEmbedding(contextString);
+            const embedConfig = embeddingForTenant(botSettings);
+            messageVector = await generateEmbedding(contextString, {
+                modelId: embedConfig.modelId,
+                prefix: embedConfig.queryPrefix
+            });
         } catch (embeddingError) {
             console.warn('[SmartResponder] Embedding unavailable, using text fallback:', embeddingError.message);
         }
