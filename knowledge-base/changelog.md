@@ -1,6 +1,14 @@
 # Changelog
 
 
+## 2026-07-07 - Fix Legacy Smart Responder Prefix and Model Mismatch
+**What**: Updated `handleSmartReplyLegacy` to dynamically apply the tenant's selected embedding model and the required `query: ` prefix.
+**Why**: After switching the default model to `multilingual-e5-small` and re-embedding the FAQ vectors with the `passage: ` prefix, the legacy smart responder was still hardcoding the `all-MiniLM-L6-v2` model ID and omitting the query prefix. This caused a catastrophic vector mismatch and prevented the bot from returning any FAQ matches.
+**Files Changed**: backend/src/services/smartResponder.js
+- Imported `embeddingForTenant` configuration.
+- Changed `LEGACY_MODEL_ID` to default to `multilingual-e5-small`.
+- Added the `modelId` and `prefix` arguments to the `generateEmbedding` call in `handleSmartReplyLegacy`.
+
 ## 2026-07-07 - Add Multilingual Support for FAQ Responses
 **What**: Configured embedding default model and text tokenization to natively support non-Latin languages including Hindi and Gujarati.
 **Why**: The customer required the bot to understand FAQ queries natively sent in English, Hindi, and Gujarati and respond accordingly.
