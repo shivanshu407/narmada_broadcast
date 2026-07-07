@@ -1,4 +1,4 @@
-export const DEFAULT_EMBEDDING_MODEL = 'all-MiniLM-L6-v2';
+export const DEFAULT_EMBEDDING_MODEL = 'multilingual-e5-small';
 
 export const EMBEDDING_MODELS = {
     'all-MiniLM-L6-v2': {
@@ -19,7 +19,7 @@ export const EMBEDDING_MODELS = {
         passagePrefix: 'passage: ',
         multilingual: true,
         bands: { high: 0.86, medium: 0.82 },
-        label: 'Multilingual E5-small (Hindi / Hinglish · on-device)',
+        label: 'Multilingual E5-small (English / Hindi / Gujarati · on-device)',
     },
 };
 

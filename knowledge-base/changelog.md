@@ -1,5 +1,13 @@
 # Changelog
 
+
+## 2026-07-07 - Add Multilingual Support for FAQ Responses
+**What**: Configured embedding default model and text tokenization to natively support non-Latin languages including Hindi and Gujarati.
+**Why**: The customer required the bot to understand FAQ queries natively sent in English, Hindi, and Gujarati and respond accordingly.
+**Files Changed**: backend/src/config/embeddingConfig.js, backend/src/services/smartResponder.js, knowledge-base/changelog.md, knowledge-base/chatbot.md
+- Switched DEFAULT_EMBEDDING_MODEL to multilingual-e5-small in embeddingConfig.js.
+- Updated tokenizeForMatch in smartResponder.js to use [^\p{L}\p{N}\s]/gu regex to avoid stripping Hindi and Gujarati characters during lexical processing.
+- Ran migration script to re-embed all existing FAQ questions, phrasings, and product data using the new model.
 ## 2026-07-03 — Add No-Match Triage Before Suggestions Queue
 **What**: Added deterministic Smart Automation no-match triage and candidate-only Suggestions Queue Build filtering.
 **Why**: Gibberish or repeated nonsense such as `fdrdfvdf` and `LALALALA` should not be treated as FAQ gaps, while real business questions still need a recovery path and learning signal.
@@ -1249,5 +1257,6 @@ All notable changes to the WhatsApp Broadcast SaaS project, in reverse chronolog
 - Auto-disables at Meta limits (1 call, 2 URL)
 - Backend `createTemplate` accepts generic `buttons[]` array
 - Live preview renders all button types with correct WhatsApp icons
- 
+
+ 
  

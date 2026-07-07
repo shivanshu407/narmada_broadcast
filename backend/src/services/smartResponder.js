@@ -88,7 +88,7 @@ const STOP_WORDS = new Set([
 
 function tokenizeForMatch(text) {
     return normalizeText(text)
-        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
         .split(/\s+/)
         .filter((token) => token.length > 1 && !STOP_WORDS.has(token));
 }

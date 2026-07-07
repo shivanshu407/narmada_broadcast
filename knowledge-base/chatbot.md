@@ -5,7 +5,7 @@
 Smart Automation answers customer WhatsApp messages from the client's own FAQ,
 product, order, and store-hours data. It powers the Knowledge Base test console,
 the Settings automation control center, and webhook auto-replies. Matching is
-self-contained: the backend uses local embedding models when vectors are
+self-contained: the backend uses local embedding models (such as `multilingual-e5-small` to natively support queries in English, Hindi, and Gujarati) when vectors are
 available and deterministic lexical matching as the fallback.
 
 ## Structure
