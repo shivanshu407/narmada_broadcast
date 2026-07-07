@@ -124,6 +124,13 @@ export async function detectSmartFlowIntent(messageBody, botSettings = {}) {
 
     const lexical = lexicalIntent(normalized);
     const model = embeddingForTenant(botSettings);
+    
+    // Disable semantic intent matching for e5 due to vector space collapse
+    // causing extreme false positives (gibberish > 0.82 similarity).
+    if (model.key === 'multilingual-e5-small') {
+        return lexical;
+    }
+
     const threshold = Number(botSettings.smart_flow_intent_threshold)
         || DEFAULT_INTENT_THRESHOLDS[model.key]
         || 0.5;

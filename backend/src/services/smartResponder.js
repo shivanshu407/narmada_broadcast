@@ -320,7 +320,9 @@ async function handleSmartReplyLegacy(tenantId, messageBody, chatHistory = [], b
             }
         }
 
-        const THRESHOLD = MATCH_THRESHOLD;
+        const THRESHOLD = embedConfig && embedConfig.key === 'multilingual-e5-small' 
+            ? (embedConfig.bands?.medium || 0.82) 
+            : MATCH_THRESHOLD;
 
         console.log(`[SmartResponder] Message: "${messageBody}"`);
         console.log(`  - Best FAQ: ${bestFaqMatch?.question || 'None'} (Score: ${highestFaqScore.toFixed(2)})`);
