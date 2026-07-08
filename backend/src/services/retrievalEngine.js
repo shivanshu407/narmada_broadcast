@@ -102,17 +102,19 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
     })).filter((f) => f.vecScore > -1 || f.lexScore > 0);
 
     let bestFaq = null;
+    let faqCandidates = [];
     const exactMatches = faqScored.filter(f => f.vecScore === 1.0);
     
     if (exactMatches.length > 0) {
         bestFaq = exactMatches[0];
+        faqCandidates = exactMatches;
     } else {
         const vecRankedFaqIds = [...faqScored].sort((a, b) => b.vecScore - a.vecScore).map((f) => f.id);
         const lexRankedFaqIds = [...faqScored].filter((f) => f.lexScore > 0)
             .sort((a, b) => b.lexScore - a.lexScore).map((f) => f.id);
         const fused = reciprocalRankFusion([vecRankedFaqIds, lexRankedFaqIds]);
 
-        const faqCandidates = [...faqScored].sort((a, b) => {
+        faqCandidates = [...faqScored].sort((a, b) => {
             const fa = fused.get(a.id) || 0;
             const fb = fused.get(b.id) || 0;
             if (fb !== fa) return fb - fa;
