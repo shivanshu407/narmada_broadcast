@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Added Hinglish and Gujlish Stop Words to Lexical Matcher
+**What**: Expanded the `STOP_WORDS` list in `smartResponder.js` to include common Hinglish and Gujlish pronouns, question words, and verbs (e.g., `hai`, `he`, `kya`, `kha`, `mera`, `chhe`, `shu`).
+**Why**: Romanized queries were getting artificial lexical overlap scores. For example, "mera order kha he?" and "aapki dukan kha he?" both contain "kha he". Because these words were not filtered out as stop words, the lexical engine mistakenly calculated a 50% keyword overlap between the Order FAQ and the Dukan FAQ, incorrectly inflating the score for the wrong answer. By filtering out these common words, lexical scoring accurately focuses only on true nouns and entities (e.g., "order" vs "dukan").
+**Files Changed**:
+- `backend/src/services/smartResponder.js`
+
 ## 2026-07-08 - Raised High Threshold for Multilingual E5
 **What**: Increased the `high` confidence threshold for `multilingual-e5-small` from `0.86` to `0.89` in `embeddingConfig.js`.
 **Why**: Romanized Hinglish/Gujlish queries (e.g., "mera order kha he?") create densely packed vectors that often score `> 0.86` against completely unrelated native script FAQs that share Romanized keywords (e.g., English words like "order" present in Gujarati FAQ questions). By raising the threshold to `0.89`, fuzzy cross-lingual drift matches are correctly downgraded to the `medium` band, forcing a Disambiguation Menu ("Did you mean?") instead of providing a wildly inaccurate direct answer. (Note: For exact matches like "mera order kha he", we also seeded the exact alternate phrasing to ensure a 1.0 Lexical score bypasses vectors entirely).

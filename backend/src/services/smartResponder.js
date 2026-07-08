@@ -81,10 +81,25 @@ export function normalizeText(text) {
 }
 
 const STOP_WORDS = new Set([
+    // English
     'a', 'an', 'and', 'are', 'as', 'at', 'be', 'can', 'do', 'does', 'for',
     'from', 'how', 'i', 'in', 'is', 'it', 'me', 'my', 'of', 'on', 'or',
     'please', 'the', 'to', 'we', 'what', 'when', 'where', 'which', 'who',
-    'with', 'you', 'your'
+    'with', 'you', 'your',
+    
+    // Hinglish (Romanized Hindi)
+    'hai', 'he', 'ho', 'hu', 'tha', 'thi', 'the', 
+    'kya', 'kha', 'kaha', 'kahan', 'kab', 'kyu', 'kaise', 'kon',
+    'ye', 'wo', 'yaha', 'waha', 
+    'mera', 'meri', 'mere', 'hum', 'humara', 'hamara', 'aap', 'aapka', 'aapki', 'apka', 'apki',
+    'ko', 'se', 'ke', 'ki', 'ka', 'mein', 'me', 'par', 'pe',
+
+    // Gujlish (Romanized Gujarati)
+    'chhe', 'che', 'chu', 'cho', 'hata', 'hati', 'hato',
+    'shu', 'su', 'kya', 'kyare', 'kem', 'kevi', 'rite', 'kone',
+    'aa', 'te', 'ahiya', 'tya',
+    'maru', 'mara', 'mari', 'amaru', 'amara', 'amari', 'tame', 'tamaru', 'tamara', 'tamari',
+    'nu', 'no', 'ni', 'na', 'thi', 'ma', 'mate', 'ni', 'ne'
 ]);
 
 function tokenizeForMatch(text) {
