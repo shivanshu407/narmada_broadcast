@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Fix Semantic Mismatch for Romanized Exact Matches
+**What**: Enforced a `1.0` semantic score for exact textual matches in `retrievalEngine.js`.
+**Why**: When a customer typed an exact Romanized Gujarati phrase (e.g. "tamari dukan kya che?"), the embedding model generated a query vector that didn't perfectly match the phrasing passage vector. Because the score dropped below the high threshold (`0.88`), the system presented an English "Did you mean?" disambiguation menu instead of returning the perfectly matched Gujarati response. 
+**Files Changed**:
+- `backend/src/services/retrievalEngine.js`
+
 ## 2026-07-08 - Added Gujarati FAQs and Phrasings
 **What**: Created a script `upload-gujarati-faqs.js` to translate all 24 existing bot FAQs into Gujarati (with Romanized "Hinglish"/Gujarati alternate phrasings like "tamari dukan kya che?") and uploaded them to the live production database via the Knowledge Base API.
 **Why**: The client requested that when a user asks a question in Gujarati (e.g., "તમારી દુકાન ક્યાં છે? or tamari dukan kya che?"), the bot should respond in Gujarati (e.g., "સુરત"). Since the current bot relies on vector matching rather than an LLM for dynamic translation, we seeded pre-translated Gujarati FAQs and responses to match the user intent accurately.
