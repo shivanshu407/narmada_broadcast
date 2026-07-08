@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Automated Romanized Transliteration for Native FAQs
+**What**: Modified the `POST /api/v1/knowledge-base/` and `POST /api/v1/knowledge-base/import` routes in the backend to automatically transliterate any new Hindi or Gujarati FAQs into Romanized Hinglish/Gujlish using the `transliteration` package. We also ran a background script to backfill this for all existing FAQs on the production database.
+**Why**: Ensures that whenever a user types a Hinglish/Gujlish slang query on WhatsApp, the backend automatically matches it against the correctly generated `FaqPhrasing` of the native FAQ. This removes the manual burden of adding alternate Romanized phrasings every time a Hindi or Gujarati FAQ is created in the dashboard, guaranteeing that all question-answer pairs respond accurately regardless of the alphabet the customer uses.
+**Files Changed**:
+- `backend/src/routes/knowledge-base.js`
+
 ## 2026-07-08 - Added Hinglish and Gujlish Stop Words to Lexical Matcher
 **What**: Expanded the `STOP_WORDS` list in `smartResponder.js` to include common Hinglish and Gujlish pronouns, question words, and verbs (e.g., `hai`, `he`, `kya`, `kha`, `mera`, `chhe`, `shu`).
 **Why**: Romanized queries were getting artificial lexical overlap scores. For example, "mera order kha he?" and "aapki dukan kha he?" both contain "kha he". Because these words were not filtered out as stop words, the lexical engine mistakenly calculated a 50% keyword overlap between the Order FAQ and the Dukan FAQ, incorrectly inflating the score for the wrong answer. By filtering out these common words, lexical scoring accurately focuses only on true nouns and entities (e.g., "order" vs "dukan").

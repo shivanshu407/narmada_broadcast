@@ -170,6 +170,23 @@ router.post('/', async (req, res) => {
             is_active: true,
         });
         await faq.save();
+        
+        // Auto-transliterate Hindi/Gujarati to Romanized phrasing
+        const { transliterate } = await import('transliteration');
+        if (/[^\x00-\x7F]/.test(question)) {
+            const rom = transliterate(question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+            if (rom && rom.length > 2) {
+                const romEmbedding = await optionalEmbedding(rom, req.tenant?.bot_settings || {});
+                await FaqPhrasing.create({
+                    tenant_id: tenantId,
+                    faq_id: faq._id,
+                    phrasing: rom,
+                    phrasing_vector: romEmbedding.vector,
+                    embedding_model: romEmbedding.model,
+                });
+            }
+        }
+
         invalidateTenantVectorCache(tenantId);
         res.status(201).json(faqToClient(faq));
     } catch (error) {
@@ -203,6 +220,22 @@ router.post('/import', async (req, res) => {
             });
             await faq.save();
             imported++;
+
+            // Auto-transliterate Hindi/Gujarati to Romanized phrasing
+            const { transliterate } = await import('transliteration');
+            if (/[^\x00-\x7F]/.test(f.question)) {
+                const rom = transliterate(f.question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+                if (rom && rom.length > 2) {
+                    const romEmbedding = await optionalEmbedding(rom, req.tenant?.bot_settings || {});
+                    await FaqPhrasing.create({
+                        tenant_id: tenantId,
+                        faq_id: faq._id,
+                        phrasing: rom,
+                        phrasing_vector: romEmbedding.vector,
+                        embedding_model: romEmbedding.model,
+                    });
+                }
+            }
         }
 
         invalidateTenantVectorCache(tenantId);
