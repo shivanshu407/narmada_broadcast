@@ -144,8 +144,8 @@ export async function getTenantKnowledge(tenantId, { force = false } = {}) {
         return cached;
     }
 
-    const faqRows = await KnowledgeBase.find({ is_active: true });
-    const phrasingRows = await FaqPhrasing.find({});
+    const faqRows = await KnowledgeBase.find({ is_active: true }).lean();
+    const phrasingRows = await FaqPhrasing.find({}).lean();
 
     const phrasingsByFaq = new Map();
     for (const p of phrasingRows) {
