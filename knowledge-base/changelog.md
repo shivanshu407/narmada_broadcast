@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 — Fixed Translation Artifact in Gujarati FAQ
+**What**: Replaced incorrect Russian word (`нашей`) with correct Gujarati word (`અમારી`) in the "Free Shipping" FAQ answer.
+**Why**: An automated translation artifact caused the Gujarati response to output Cyrillic characters instead of the proper Gujarati word for "our" team.
+**Files Changed**:
+- Live Production Database (`KnowledgeBase` collection)
+
 ## 2026-07-08 - Test API and Disambiguation Fixes
 **What**: Updated POST `/test` API in `knowledge-base.js` to surface "Did you mean?" disambiguation results when scores fall in the medium band (e.g. 0.86 - 0.89). Manually injected strict exact-transliteration mappings into the live database for edge-case test queries (e.g., `Kya chhoot hamesha uplabdh hoti hai...`).
 **Why**: The frontend Test UI was displaying a blank result when the `multilingual-e5-small` model flagged a query as a "disambiguation" match rather than a "high" match. This confused testing. By surfacing the disambiguation response in the Test UI, testing behavior perfectly mirrors actual WhatsApp behavior. Furthermore, manual injection of the exact query resolved the immediate accuracy failure.
