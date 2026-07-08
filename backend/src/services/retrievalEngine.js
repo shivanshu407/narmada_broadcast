@@ -44,14 +44,22 @@ function reciprocalRankFusion(rankedLists, k = RRF_K) {
     return fused;
 }
 
-async function lexicalScoresFaq(normalizedMsg) {
+async function lexicalScoresFaq(normalizedMsg, tenantId) {
     if (!normalizedMsg) return new Map();
     const map = new Map();
     try {
-        const regex = new RegExp(normalizedMsg.split(' ').filter(Boolean).join('|'), 'i');
-        const rows = await KnowledgeBase.find({ is_active: true, $or: [{ question: regex }, { answer: regex }] });
-        for (const r of rows) {
-            map.set(r._id.toString(), 1.0);
+        const { getTenantKnowledge, scoreTextMatch } = await import('./smartResponder.js');
+        const { faqs } = await getTenantKnowledge(tenantId);
+        
+        for (const f of faqs) {
+            let maxLex = scoreTextMatch(normalizedMsg, f.question);
+            maxLex = Math.max(maxLex, scoreTextMatch(normalizedMsg, f.answer));
+            for (const phr of f.phrasings || []) {
+                maxLex = Math.max(maxLex, scoreTextMatch(normalizedMsg, phr.text));
+            }
+            if (maxLex > 0.3) {
+                map.set(f.id, maxLex);
+            }
         }
     } catch (err) {
         console.warn(`[RetrievalV2] Lexical search skipped for FAQ:`, err.message);
@@ -59,14 +67,22 @@ async function lexicalScoresFaq(normalizedMsg) {
     return map;
 }
 
-async function lexicalScoresProduct(normalizedMsg) {
+async function lexicalScoresProduct(normalizedMsg, tenantId) {
     if (!normalizedMsg) return new Map();
     const map = new Map();
     try {
-        const regex = new RegExp(normalizedMsg.split(' ').filter(Boolean).join('|'), 'i');
-        const rows = await Product.find({ inventory_available: { $ne: false }, $or: [{ name: regex }, { description: regex }] });
-        for (const r of rows) {
-            map.set(r._id.toString(), 1.0);
+        const { getTenantKnowledge, scoreTextMatch } = await import('./smartResponder.js');
+        const { products } = await getTenantKnowledge(tenantId);
+        
+        for (const p of products) {
+            let maxLex = scoreTextMatch(normalizedMsg, p.name);
+            maxLex = Math.max(maxLex, scoreTextMatch(normalizedMsg, p.description));
+            for (const phr of p.phrasings || []) {
+                maxLex = Math.max(maxLex, scoreTextMatch(normalizedMsg, phr.text));
+            }
+            if (maxLex > 0.3) {
+                map.set(p.id, maxLex);
+            }
         }
     } catch (err) {
         console.warn(`[RetrievalV2] Lexical search skipped for Products:`, err.message);
