@@ -132,6 +132,16 @@ router.get('/debug-phrasings', async (req, res) => {
     }
 });
 
+router.post('/debug-score', async (req, res) => {
+    try {
+        const { scoreTextMatch } = await import('../services/smartResponder.js');
+        const { query, candidate } = req.body;
+        res.json({ score: scoreTextMatch(query, candidate) });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const { question, answer } = req.body;
