@@ -15,7 +15,9 @@
     },
     "dependencies": {
         "@huggingface/transformers": "^4.2.0",
+        "@vitalets/google-translate-api": "^9.2.1",
         "bcryptjs": "^2.4.3",
+        "bing-translate-api": "^4.2.0",
         "cors": "^2.8.5",
         "dotenv": "^16.4.1",
         "express": "^4.18.2",
@@ -23,7 +25,8 @@
         "mongoose": "^9.7.2",
         "multer": "^2.2.0",
         "razorpay": "^2.9.6",
-        "socket.io": "^4.8.3"
+        "socket.io": "^4.8.3",
+        "transliteration": "^2.6.1"
     },
     "overrides": {
         "ws": "^8.21.0"

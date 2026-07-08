@@ -14,24 +14,12 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 async function run() {
-    console.log('Generating embedding for FAQ 1...');
-    const faqVector = await generateEmbedding('Our store is located at 123 Main Street and we are open from 9 AM to 5 PM.');
+    console.log('Generating exact match embeddings...');
+    const qVec = await generateEmbedding('tamari dukan kya che?', { modelId: 'Xenova/multilingual-e5-small', prefix: 'query: '});
+    const pVec = await generateEmbedding('tamari dukan kya che?', { modelId: 'Xenova/multilingual-e5-small', prefix: 'passage: '});
     
-    console.log('Generating embedding for Question 1...');
-    const q1Vector = await generateEmbedding('what time do you close?');
-    
-    console.log('Generating embedding for Question 2...');
-    const q2Vector = await generateEmbedding('how much is this item?');
-
-    const score1 = cosineSimilarity(faqVector, q1Vector);
-    const score2 = cosineSimilarity(faqVector, q2Vector);
-
-    console.log(`\nScore for "what time do you close?" -> ${score1.toFixed(3)}`);
-    console.log(`Score for "how much is this item?" -> ${score2.toFixed(3)}`);
-
-    if (score1 > score2) {
-        console.log('\n✅ Semantic search working correctly! The time question scored higher than the pricing question.');
-    }
+    const score = cosineSimilarity(qVec, pVec);
+    console.log(`\nExact match score (query vs passage prefix): ${score.toFixed(4)}`);
 }
 
 run();

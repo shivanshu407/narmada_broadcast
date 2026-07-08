@@ -104,6 +104,7 @@ router.post('/test', async (req, res) => {
             matched_answer: matchedAnswer,
             reply,
             matches,
+            _debug_test: reply || 'none', // Just to see what reply actually is
         });
     } catch (error) {
         console.error('Knowledge base test error:', error);
