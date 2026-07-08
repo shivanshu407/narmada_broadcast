@@ -161,9 +161,9 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
             .map((c) => ({ id: c.id, question: c.question, answer: c.answer, score: c.vecScore }));
 
         if (flagEnabled(botSettings, 'disambiguation') && candidates.length >= 2) {
-            return { type: 'disambiguation', candidates, band: 'medium' };
+            return { type: 'disambiguation', candidates, band: 'medium', _debug_scores: faqScored };
         }
-        return { type: 'faq', text: bestFaq.answer, faqId: bestFaq.id, score: bestFaqScore, band: 'medium' };
+        return { type: 'faq', text: bestFaq.answer, faqId: bestFaq.id, score: bestFaqScore, band: 'medium', _debug_scores: faqScored };
     }
 
     return null;
