@@ -101,19 +101,26 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
         lexScore: faqLex.get(f.id) || 0,
     })).filter((f) => f.vecScore > -1 || f.lexScore > 0);
 
-    const vecRankedFaqIds = [...faqScored].sort((a, b) => b.vecScore - a.vecScore).map((f) => f.id);
-    const lexRankedFaqIds = [...faqScored].filter((f) => f.lexScore > 0)
-        .sort((a, b) => b.lexScore - a.lexScore).map((f) => f.id);
-    const fused = reciprocalRankFusion([vecRankedFaqIds, lexRankedFaqIds]);
+    let bestFaq = null;
+    const exactMatches = faqScored.filter(f => f.vecScore === 1.0);
+    
+    if (exactMatches.length > 0) {
+        bestFaq = exactMatches[0];
+    } else {
+        const vecRankedFaqIds = [...faqScored].sort((a, b) => b.vecScore - a.vecScore).map((f) => f.id);
+        const lexRankedFaqIds = [...faqScored].filter((f) => f.lexScore > 0)
+            .sort((a, b) => b.lexScore - a.lexScore).map((f) => f.id);
+        const fused = reciprocalRankFusion([vecRankedFaqIds, lexRankedFaqIds]);
 
-    const faqCandidates = [...faqScored].sort((a, b) => {
-        const fa = fused.get(a.id) || 0;
-        const fb = fused.get(b.id) || 0;
-        if (fb !== fa) return fb - fa;
-        return b.vecScore - a.vecScore;
-    });
+        const faqCandidates = [...faqScored].sort((a, b) => {
+            const fa = fused.get(a.id) || 0;
+            const fb = fused.get(b.id) || 0;
+            if (fb !== fa) return fb - fa;
+            return b.vecScore - a.vecScore;
+        });
 
-    const bestFaq = faqCandidates[0] || null;
+        bestFaq = faqCandidates[0] || null;
+    }
 
     let bestProduct = null;
     let bestProductScore = -1;

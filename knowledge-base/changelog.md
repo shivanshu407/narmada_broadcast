@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Added Full Gujarati and Hindi Translations for 63 FAQs
+**What**: Automatically translated all 63 English FAQs into Gujarati and Hindi, bringing the total live FAQ count to 189.
+**Why**: The user requested that all existing English FAQs be available in Gujarati and Hindi to fully support multilingual queries natively using embeddings.
+**Files Changed**: None (Database update via API)
+- Wrote `translate-faqs.js` utilizing `bing-translate-api` to process and upload translations sequentially to avoid rate limits.
+
 ## 2026-07-08 - Reattach Orphaned Phrasings
 **What**: Reattached exact match phrasings to newly recreated FAQ
 **Why**: The original FAQ ("તમારી દુકાન ક્યાં છે?") was deleted and recreated in the database, causing its associated exact match phrasings (e.g. "tamari dukan kya che?") to become orphaned. This caused the bot to fall back to vector matching and show the disambiguation menu.
