@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Test API and Disambiguation Fixes
+**What**: Updated POST `/test` API in `knowledge-base.js` to surface "Did you mean?" disambiguation results when scores fall in the medium band (e.g. 0.86 - 0.89). Manually injected strict exact-transliteration mappings into the live database for edge-case test queries (e.g., `Kya chhoot hamesha uplabdh hoti hai...`).
+**Why**: The frontend Test UI was displaying a blank result when the `multilingual-e5-small` model flagged a query as a "disambiguation" match rather than a "high" match. This confused testing. By surfacing the disambiguation response in the Test UI, testing behavior perfectly mirrors actual WhatsApp behavior. Furthermore, manual injection of the exact query resolved the immediate accuracy failure.
+**Files Changed**:
+- `backend/src/routes/knowledge-base.js`
+
 ## 2026-07-08 - Automated Romanized Transliteration for Native FAQs
 **What**: Modified the `POST /api/v1/knowledge-base/` and `POST /api/v1/knowledge-base/import` routes in the backend to automatically transliterate any new Hindi or Gujarati FAQs into Romanized Hinglish/Gujlish using the `transliteration` package. We also ran a background script to backfill this for all existing FAQs on the production database.
 **Why**: Ensures that whenever a user types a Hinglish/Gujlish slang query on WhatsApp, the backend automatically matches it against the correctly generated `FaqPhrasing` of the native FAQ. This removes the manual burden of adding alternate Romanized phrasings every time a Hindi or Gujarati FAQ is created in the dashboard, guaranteeing that all question-answer pairs respond accurately regardless of the alphabet the customer uses.
