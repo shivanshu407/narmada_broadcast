@@ -122,6 +122,16 @@ router.post('/test', async (req, res) => {
     }
 });
 
+router.get('/debug-phrasings', authenticateToken, async (req, res) => {
+    try {
+        const { getTenantKnowledge } = await import('../services/smartResponder.js');
+        const { faqs } = await getTenantKnowledge(req.tenant);
+        res.json({ faqs });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const { question, answer } = req.body;
