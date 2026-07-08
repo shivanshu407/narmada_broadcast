@@ -99,8 +99,8 @@ export function scoreTextMatch(query, candidate) {
     const normalizedCandidate = normalizeText(candidate);
     if (!normalizedQuery || !normalizedCandidate) return 0;
 
-    if (normalizedCandidate.includes(normalizedQuery) || normalizedQuery.includes(normalizedCandidate)) {
-        return 0.95;
+    if (normalizedQuery === normalizedCandidate) {
+        return 1.0;
     }
 
     const queryTokens = tokenizeForMatch(normalizedQuery);

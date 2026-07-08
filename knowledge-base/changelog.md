@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Fixed Substring False Positives in Lexical Scoring
+**What**: Removed the `.includes()` string check from `scoreTextMatch` in `smartResponder.js` and replaced it with an exact string equality (`===`) check.
+**Why**: The system was returning high confidence (1.0) for completely unrelated FAQs if their question happened to be a substring of a word in the user's query. For example, if a user asked about "shipping", the system incorrectly matched the "Hi" FAQ (because "s**hi**pping" includes "hi"). The token overlap algorithm handles partial matches safely, so the raw string includes check was actively harmful and caused unrelated welcome messages to overwrite 95% semantic matches.
+**Files Changed**:
+- `backend/src/services/smartResponder.js`
+
 ## 2026-07-08 - Fixed Lexical Phrasing Scope in Hybrid Retrieval Fusion
 **What**: Rewrote `lexicalScoresFaq` and `lexicalScoresProduct` to fetch the fully-cached `faqs` and `products` arrays (which include the seeded phrasings) and compute `scoreTextMatch` across the primary question, answer, and all associated phrasings.
 **Why**: The previous implementation of `lexicalScoresFaq` used hardcoded regex queries against the `KnowledgeBase` and `Product` models, completely ignoring `FaqPhrasing` and entirely skipping the advanced `scoreTextMatch` tokenization and scoring logic. This caused Romanized queries mapped to native script FAQs to receive a `lexScore` of `0`, falling back to semantic disambiguation.
