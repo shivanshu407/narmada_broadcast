@@ -5,6 +5,7 @@ import {
     dotProduct,
     normalizeText,
     getTenantKnowledge,
+    scoreTextMatch,
 } from './smartResponder.js';
 import { confidenceBands, classifyBand, flagEnabled } from '../config/botConfig.js';
 import { embeddingForTenant, modelMatches } from '../config/embeddingConfig.js';
@@ -17,12 +18,16 @@ async function embedQuery(message, model) {
     return generateEmbedding(normalized, { modelId: model.modelId, prefix: model.queryPrefix });
 }
 
-function bestFaqSimilarity(queryVec, faq, activeModel) {
+function bestFaqSimilarity(queryVec, faq, activeModel, messageBody) {
     let best = -1;
+    if (scoreTextMatch(messageBody, faq.question) >= 0.95) return 1.0;
+
     if (faq.vec && modelMatches(faq.model, activeModel) && faq.vec.length === queryVec.length) {
         best = Math.max(best, dotProduct(queryVec, faq.vec));
     }
     for (const phr of faq.phrasings || []) {
+        if (scoreTextMatch(messageBody, phr.text) >= 0.95) return 1.0;
+
         if (!phr.vec || !modelMatches(phr.model, activeModel) || phr.vec.length !== queryVec.length) continue;
         best = Math.max(best, dotProduct(queryVec, phr.vec));
     }
@@ -92,7 +97,7 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
         id: f.id,
         question: f.question,
         answer: f.answer,
-        vecScore: bestFaqSimilarity(queryVec, f, activeModel),
+        vecScore: bestFaqSimilarity(queryVec, f, activeModel, messageBody),
         lexScore: faqLex.get(f.id) || 0,
     })).filter((f) => f.vecScore > -1 || f.lexScore > 0);
 
