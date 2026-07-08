@@ -142,6 +142,18 @@ router.post('/debug-score', async (req, res) => {
     }
 });
 
+router.post('/debug-lex', async (req, res) => {
+    try {
+        const { lexicalScoresFaq } = await import('../services/retrievalEngine.js');
+        const { message, tenant_id } = req.body;
+        const lexMap = await lexicalScoresFaq(message, tenant_id);
+        const lexObj = Object.fromEntries(lexMap.entries());
+        res.json({ lexObj });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const { question, answer } = req.body;
