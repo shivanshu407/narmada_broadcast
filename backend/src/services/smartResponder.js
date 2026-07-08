@@ -123,7 +123,8 @@ export function invalidateTenantVectorCache(tenantId) {
     if (tenantId === undefined || tenantId === null) {
         tenantVectorCache.clear();
     } else {
-        tenantVectorCache.delete(String(tenantId || 'single-tenant'));
+        tenantVectorCache.delete(String(tenantId));
+        tenantVectorCache.delete('single-tenant'); // To ensure no leaks across fallbacks
     }
 }
 

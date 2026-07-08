@@ -89,8 +89,8 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
     const bands = confidenceBands(botSettings, model.bands);
 
     const [faqLex, productLex] = await Promise.all([
-        lexicalScoresFaq(normalized),
-        lexicalScoresProduct(normalized),
+        lexicalScoresFaq(normalized, tenantId),
+        lexicalScoresProduct(normalized, tenantId),
     ]);
 
     const faqScored = faqs.map((f) => ({
