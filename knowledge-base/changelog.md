@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-08 - Added Gujarati FAQs and Phrasings
+**What**: Created a script `upload-gujarati-faqs.js` to translate all 24 existing bot FAQs into Gujarati (with Romanized "Hinglish"/Gujarati alternate phrasings like "tamari dukan kya che?") and uploaded them to the live production database via the Knowledge Base API.
+**Why**: The client requested that when a user asks a question in Gujarati (e.g., "તમારી દુકાન ક્યાં છે? or tamari dukan kya che?"), the bot should respond in Gujarati (e.g., "સુરત"). Since the current bot relies on vector matching rather than an LLM for dynamic translation, we seeded pre-translated Gujarati FAQs and responses to match the user intent accurately.
+**Files Changed**:
+- `backend/upload-gujarati-faqs.js` (temporary import script)
+
+## 2026-07-08 - Add Client Bot Instructions & Policies to FAQs
+**What**: Added 10 new bot behavioral instructions and company policies (language, tone, support hours, shipping, returns) to the `seed_faqs.js` script and ran the seed to update the Knowledge Base.
+**Why**: The client provided specific instructions on how the bot should behave (asking before human handoff, speaking multiple languages, reply length, emojis, avoiding misleading claims) and confirmed website policies (support hours, shipping, returns) that the bot needs to use when responding to customers.
+**Files Changed**:
+- `backend/seed_faqs.js`
+
 ## 2026-07-07 - Fix Semantic Routing False Positives for Multilingual e5-small
 **What**: Disabled semantic intent checks for `multilingual-e5-small` in `smartFlows.js` and enforced a strict threshold of `0.82` for legacy semantic FAQ matching.
 **Why**: The `multilingual-e5-small` model compresses gibberish and romanized Hindi tightly into the vector space, resulting in >`0.82` similarity scores against completely unrelated English sentences (e.g. gibberish scoring `0.824` against "where is my order"). This caused extreme false positives, incorrectly triggering order status summaries. Semantic flow intent routing is now skipped for this model, relying purely on lexical fallback.

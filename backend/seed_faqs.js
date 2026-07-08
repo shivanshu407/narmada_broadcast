@@ -97,6 +97,56 @@ const faqs = [
         question: "Do you provide bulk or commercial orders?",
         answer: "Yes, we specialize in *bulk and commercial orders*.",
         is_active: true
+    },
+    {
+        question: "If the bot does not understand, should it ask before adding human support?",
+        answer: "Yes. If the bot does not understand the customer's question, it should first ask for clarification instead of immediately transferring to a human.",
+        is_active: true
+    },
+    {
+        question: "Should the bot speak in English, Hindi, Gujarati, or all three?",
+        answer: "The bot should be able to communicate in English, Hindi, and Gujarati, and automatically respond in the same language the customer uses for a smooth and personalized experience.",
+        is_active: true
+    },
+    {
+        question: "Should replies be short and direct or detailed?",
+        answer: "The bot should keep replies short, clear, and direct by default. If a customer asks for more information or needs detailed guidance, the bot should provide a more detailed explanation. This ensures quick responses while still being helpful when needed.",
+        is_active: true
+    },
+    {
+        question: "Should the bot use emojis or keep it professional?",
+        answer: "The bot should maintain a professional, friendly, and welcoming tone. It may use a few simple emojis (such as 😊, ✿, 🚚, or 📞) where appropriate to make conversations feel warm and engaging, but it should avoid excessive emojis and always keep replies clear and professional.",
+        is_active: true
+    },
+    {
+        question: "Any words or claims the bot must avoid?",
+        answer: "Yes. The bot should avoid making misleading or unverifiable claims. It should not use words or promises such as:\n• \"Guaranteed results\" or \"100% guaranteed.\"\n• \"Best in India,\" \"No.1,\" or \"World's best\" unless officially verified.\n• Any medical or health claims (e.g., \"cures allergies,\" \"kills viruses,\" or \"improves health\").\n• False promises about fragrance lasting forever or working in every environment.\n• Competitor comparisons that are misleading or disrespectful.\n• Incorrect pricing, offers, or delivery timelines.\n• Claims that a product is available or in stock unless confirmed.",
+        is_active: true
+    },
+    {
+        question: "Website currently shows support time as 24/7. Is that correct for WhatsApp support?",
+        answer: "WhatsApp Support Hours: 10:00 AM to 7:00 PM (Monday to Saturday)\nOur WhatsApp bot is available to answer common questions anytime. However, if you need assistance from our support team, our human representatives are available Monday to Saturday, 10:00 AM to 7:00 PM. Messages received outside these hours will be answered during the next business day.",
+        is_active: true
+    },
+    {
+        question: "Website shipping policy currently says order processing is 1-3 business days. Is that correct?",
+        answer: "Order Processing Time: Orders are typically processed and dispatched within 1-2 business days after order confirmation, subject to product availability. Bulk or customized orders may require additional processing time, and our team will inform customers of the estimated dispatch schedule.",
+        is_active: true
+    },
+    {
+        question: "Website shipping policy currently says delivery is 3-7 business days. Is that correct?",
+        answer: "Delivery Time: We offer free home delivery within Surat, which is usually completed within 1-2 days. For deliveries across Gujarat and the rest of India, orders are typically delivered within 3-7 business days, depending on the destination and courier service.",
+        is_active: true
+    },
+    {
+        question: "Website return policy currently says return requests are accepted within 7 days for unused and unopened products. Is that correct?",
+        answer: "Yes, that's correct. Return requests are accepted within 7 days of delivery for unused, unopened products in their original packaging. If a product is damaged, defective, leaking, or the wrong item is delivered, customers should report the issue within 24 hours of delivery by sharing clear photos or a video on WhatsApp so we can arrange a replacement or an appropriate resolution.",
+        is_active: true
+    },
+    {
+        question: "Which timing should the WhatsApp bot use for damaged/defective reports?",
+        answer: "Recommended WhatsApp Bot Policy: Customers should report any damaged, defective, leaking, incorrect, or missing product within 24 hours of delivery by sharing their order details along with clear photos or a video on WhatsApp. Our team will verify the issue and arrange a replacement or an appropriate resolution.",
+        is_active: true
     }
 ];
 
