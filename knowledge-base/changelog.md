@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-07-08 - Reattach Orphaned Phrasings
+**What**: Reattached exact match phrasings to newly recreated FAQ
+**Why**: The original FAQ ("તમારી દુકાન ક્યાં છે?") was deleted and recreated in the database, causing its associated exact match phrasings (e.g. "tamari dukan kya che?") to become orphaned. This caused the bot to fall back to vector matching and show the disambiguation menu.
+**Files Changed**: None (Database update via API)
+- Uploaded "tamari dukan kya che?" and other romanized variants directly to the new FAQ ID `6a4de8ac63aeba00dc6008d9`.
 ## 2026-07-08 - Fix Semantic Mismatch for Romanized Exact Matches
 **What**: Enforced a `1.0` semantic score for exact textual matches in `retrievalEngine.js`.
 **Why**: When a customer typed an exact Romanized Gujarati phrase (e.g. "tamari dukan kya che?"), the embedding model generated a query vector that didn't perfectly match the phrasing passage vector. Because the score dropped below the high threshold (`0.88`), the system presented an English "Did you mean?" disambiguation menu instead of returning the perfectly matched Gujarati response. 
