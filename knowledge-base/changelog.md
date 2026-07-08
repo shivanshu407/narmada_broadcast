@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Fixed Exact Match Suppression by Fusion Logic
+**What**: Bypassed Reciprocal Rank Fusion (RRF) for FAQs that achieve a 1.0 exact match score.
+**Why**: The loose regex lexical search (`lexScore`) was causing almost all FAQs to match Gujarati queries (due to common stopwords like 'માટે' or 'છે'). This arbitrary `lexRanked` ordering was creating ties in the fused score, which occasionally caused a slightly lower-ranked vector FAQ to unfairly outrank an exact 1.0 text-match FAQ.
+**Files Changed**: 
+- `backend/src/services/retrievalEngine.js`
+
 ## 2026-07-08 - Added Full Gujarati and Hindi Translations for 63 FAQs
 **What**: Automatically translated all 63 English FAQs into Gujarati and Hindi, bringing the total live FAQ count to 189.
 **Why**: The user requested that all existing English FAQs be available in Gujarati and Hindi to fully support multilingual queries natively using embeddings.
