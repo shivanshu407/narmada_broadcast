@@ -1,0 +1,3 @@
+LEX DATA: {
+  "error": "lexicalScoresFaq is not a function"
+}

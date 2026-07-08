@@ -104,12 +104,21 @@ router.post('/test', async (req, res) => {
             .slice(0, 5);
 
         const bestMatch = matches[0] || null;
-        const matchedAnswer = reply?.type === 'faq'
-            ? reply.text
-            : (bestMatch?.score >= MATCH_THRESHOLD ? bestMatch.answer : null);
+        let matchedAnswer = null;
+        let isDisambiguate = false;
+
+        if (reply?.type === 'faq') {
+            matchedAnswer = reply.text;
+        } else if (reply?.type === 'disambiguate') {
+            isDisambiguate = true;
+            matchedAnswer = "Did you mean:\n" + reply.matches.map((m, i) => `${i+1}. ${m.question}`).join("\n");
+        } else if (bestMatch?.score >= MATCH_THRESHOLD) {
+            matchedAnswer = bestMatch.answer;
+        }
 
         res.json({
             would_reply: Boolean(reply || matchedAnswer),
+            is_disambiguate: isDisambiguate,
             matched_answer: matchedAnswer,
             reply,
             matches,
