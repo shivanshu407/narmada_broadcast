@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Raised High Threshold for Multilingual E5
+**What**: Increased the `high` confidence threshold for `multilingual-e5-small` from `0.86` to `0.89` in `embeddingConfig.js`.
+**Why**: Romanized Hinglish/Gujlish queries (e.g., "mera order kha he?") create densely packed vectors that often score `> 0.86` against completely unrelated native script FAQs that share Romanized keywords (e.g., English words like "order" present in Gujarati FAQ questions). By raising the threshold to `0.89`, fuzzy cross-lingual drift matches are correctly downgraded to the `medium` band, forcing a Disambiguation Menu ("Did you mean?") instead of providing a wildly inaccurate direct answer. (Note: For exact matches like "mera order kha he", we also seeded the exact alternate phrasing to ensure a 1.0 Lexical score bypasses vectors entirely).
+**Files Changed**:
+- `backend/src/config/embeddingConfig.js`
+
 ## 2026-07-08 - Fixed Substring False Positives in Lexical Scoring
 **What**: Removed the `.includes()` string check from `scoreTextMatch` in `smartResponder.js` and replaced it with an exact string equality (`===`) check.
 **Why**: The system was returning high confidence (1.0) for completely unrelated FAQs if their question happened to be a substring of a word in the user's query. For example, if a user asked about "shipping", the system incorrectly matched the "Hi" FAQ (because "s**hi**pping" includes "hi"). The token overlap algorithm handles partial matches safely, so the raw string includes check was actively harmful and caused unrelated welcome messages to overwrite 95% semantic matches.

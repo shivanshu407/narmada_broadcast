@@ -18,7 +18,7 @@ export const EMBEDDING_MODELS = {
         queryPrefix: 'query: ',
         passagePrefix: 'passage: ',
         multilingual: true,
-        bands: { high: 0.86, medium: 0.82 },
+        bands: { high: 0.89, medium: 0.82 },
         label: 'Multilingual E5-small (English / Hindi / Gujarati · on-device)',
     },
 };
