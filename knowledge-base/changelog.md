@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-08 - Fixed Lexical Phrasing Scope in Hybrid Retrieval Fusion
+**What**: Rewrote `lexicalScoresFaq` and `lexicalScoresProduct` to fetch the fully-cached `faqs` and `products` arrays (which include the seeded phrasings) and compute `scoreTextMatch` across the primary question, answer, and all associated phrasings.
+**Why**: The previous implementation of `lexicalScoresFaq` used hardcoded regex queries against the `KnowledgeBase` and `Product` models, completely ignoring `FaqPhrasing` and entirely skipping the advanced `scoreTextMatch` tokenization and scoring logic. This caused Romanized queries mapped to native script FAQs to receive a `lexScore` of `0`, falling back to semantic disambiguation.
+**Files Changed**:
+- `backend/src/services/retrievalEngine.js`
+
 ## 2026-07-08 - Fixed Exact Match Suppression by Fusion Logic
 **What**: Bypassed Reciprocal Rank Fusion (RRF) for FAQs that achieve a 1.0 exact match score.
 **Why**: The loose regex lexical search (`lexScore`) was causing almost all FAQs to match Gujarati queries (due to common stopwords like 'માટે' or 'છે'). This arbitrary `lexRanked` ordering was creating ties in the fused score, which occasionally caused a slightly lower-ranked vector FAQ to unfairly outrank an exact 1.0 text-match FAQ.
