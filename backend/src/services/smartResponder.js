@@ -218,6 +218,7 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
             retrievalReply = await applySmartFlowSlots(await retrieveAnswer(tenantId, messageBody, botSettings), context, botSettings);
         } catch (err) {
             console.error('[SmartResponder] retrieval_v2 failed, falling back to legacy:', err.message);
+            if (context.debugTest) return { type: 'debug_error', message: err.message, stack: err.stack };
         }
     }
 

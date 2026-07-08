@@ -72,7 +72,16 @@ router.post('/test', async (req, res) => {
         const reply = await handleSmartReply(tenantId, message, [], botSettings, {
             tenant: req.tenant,
             persistState: false,
+            debugTest: true,
         });
+
+        let directRetrieve = null;
+        try {
+            const { retrieveAnswer } = await import('../services/retrievalEngine.js');
+            directRetrieve = await retrieveAnswer(tenantId, message, botSettings);
+        } catch (e) {
+            directRetrieve = { error: e.message, stack: e.stack };
+        }
 
         const faqRows = await KnowledgeBase.find({ is_active: true }).sort({ created_at: -1 }).lean();
         const phrasingsByFaq = await getPhrasingsByFaq(faqRows.map((faq) => faq._id));
@@ -104,7 +113,8 @@ router.post('/test', async (req, res) => {
             matched_answer: matchedAnswer,
             reply,
             matches,
-            _debug_test: reply || 'none', // Just to see what reply actually is
+            _debug_test: reply || 'none',
+            _direct_retrieve: directRetrieve || 'none',
         });
     } catch (error) {
         console.error('Knowledge base test error:', error);

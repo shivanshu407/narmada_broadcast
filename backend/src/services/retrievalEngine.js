@@ -22,13 +22,13 @@ function bestFaqSimilarity(queryVec, faq, activeModel, messageBody) {
     let best = -1;
     if (scoreTextMatch(messageBody, faq.question) >= 0.95) return 1.0;
 
-    if (faq.vec && modelMatches(faq.model, activeModel) && faq.vec.length === queryVec.length) {
+    if (queryVec && faq.vec && modelMatches(faq.model, activeModel) && faq.vec.length === queryVec.length) {
         best = Math.max(best, dotProduct(queryVec, faq.vec));
     }
     for (const phr of faq.phrasings || []) {
         if (scoreTextMatch(messageBody, phr.text) >= 0.95) return 1.0;
 
-        if (!phr.vec || !modelMatches(phr.model, activeModel) || phr.vec.length !== queryVec.length) continue;
+        if (!queryVec || !phr.vec || !modelMatches(phr.model, activeModel) || phr.vec.length !== queryVec.length) continue;
         best = Math.max(best, dotProduct(queryVec, phr.vec));
     }
     return best;
@@ -125,7 +125,7 @@ export async function retrieveAnswer(tenantId, messageBody, botSettings = {}) {
     let bestProduct = null;
     let bestProductScore = -1;
     for (const p of products || []) {
-        if (!modelMatches(p.model, activeModel) || p.vec.length !== queryVec.length) continue;
+        if (!queryVec || !modelMatches(p.model, activeModel) || p.vec.length !== queryVec.length) continue;
         const s = dotProduct(queryVec, p.vec);
         if (s > bestProductScore) {
             bestProductScore = s;
