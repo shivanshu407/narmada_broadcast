@@ -122,7 +122,7 @@ router.post('/test', async (req, res) => {
     }
 });
 
-router.get('/debug-phrasings', authenticateToken, async (req, res) => {
+router.get('/debug-phrasings', async (req, res) => {
     try {
         const { getTenantKnowledge } = await import('../services/smartResponder.js');
         const { faqs } = await getTenantKnowledge(req.tenant);
