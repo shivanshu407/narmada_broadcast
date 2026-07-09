@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-09 — Fixed Slow Responses and Product Card Triggers
+**What**: Updated the `llmResponder.js` prompt to force DeepSeek to ALWAYS return the `product` JSON type when the user asks anything about a specific product (including just asking for its price). Also added instructions to keep answers concise to minimize LLM token generation.
+**Why**: When users asked for a product's price, DeepSeek was trying to answer it as a general `faq` and was translating huge paragraphs of product descriptions into Hindi/Gujarati. Generating all those non-English tokens took too long, causing Vercel serverless function timeouts (resulting in 1-2 minute delayed replies). By forcing it to return the `product` type, the backend instantly formats the product card without waiting for the LLM to generate the huge description text.
+**Files Changed**:
+- `backend/src/services/llmResponder.js`
+
 ## 2026-07-09 — Enforce Native Script Outputs for Romanized Queries
 **What**: Updated the DeepSeek system prompt in `llmResponder.js` to strictly output native Gujarati script (`અમારી દુકાન...`) when a user types in Romanized Gujlish (`tamari shop kya che`), and similarly for Hindi/Hinglish.
 **Why**: The user specifically requested that responses be in the native Gujarati language script rather than matching the Romanized input format.
