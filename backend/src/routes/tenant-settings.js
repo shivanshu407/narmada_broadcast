@@ -378,6 +378,25 @@ router.post('/embeddings/reembed', async (req, res) => {
                         });
                     }
                 }
+
+                if (faq.question.includes('કઈ કઈ ફ્રેગ્રન્સ ઉપલબ્ધ છે')) {
+                    const exactTestPhrasing = "Kai kai fragrance uplabdh chhe?".toLowerCase();
+                    const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
+                    const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
+                    if (!exists) {
+                        const exactVector = await generateEmbedding(exactTestPhrasing, {
+                            modelId: model.modelId,
+                            prefix: model.passagePrefix,
+                        });
+                        await FaqPhrasing.create({
+                            tenant_id: faq.tenant_id,
+                            faq_id: faq._id,
+                            phrasing: exactTestPhrasing,
+                            phrasing_vector: exactVector,
+                            embedding_model: model.key,
+                        });
+                    }
+                }
             }
         }
 
