@@ -42,7 +42,7 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         }
 
         contextText += "\nCRITICAL RULES:\n";
-        contextText += "1. Reply in the exact same language the user writes in (including Romanized Hindi/Gujarati/Hinglish/Gujlish slang).\n";
+        contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script, reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script), reply in Roman script. Do NOT translate their language into the language of the FAQs.\n";
         contextText += "2. Keep your answers brief, friendly, and formatted nicely for WhatsApp.\n";
         contextText += "3. NEVER invent prices, products, or policies not listed above.\n";
 
