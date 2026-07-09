@@ -1,24 +1,5 @@
 # Changelog
 
-## 2026-07-09 — Enforce Native Script Outputs for Romanized Queries
-**What**: Updated the DeepSeek system prompt in `llmResponder.js` to strictly output native Gujarati script (`અમારી દુકાન...`) when a user types in Romanized Gujlish (`tamari shop kya che`), and similarly for Hindi/Hinglish.
-**Why**: The user specifically requested that responses be in the native Gujarati language script rather than matching the Romanized input format.
-**Files Changed**:
-- `backend/src/services/llmResponder.js`
-
-## 2026-07-09 — Fixed Terse Responses and Gujlish Script Matching
-**What**: Updated the DeepSeek system prompt in `llmResponder.js` to explicitly require "complete, polite, and helpful answers" instead of brief one-word answers. Also strengthened the language matching rule to provide explicit examples of Gujlish (e.g. `Amari shop Surat ma aaveli che`) to prevent the LLM from incorrectly outputting native Gujarati script when the user typed in Roman script.
-**Why**: The bot was replying with single words like "સુરત" (in Gujarati script) when users asked "tamari shop kya che" (in Roman script), because the prompt was too strongly biased toward brevity and the LLM defaulted to translating to the native script of the geographic entity.
-**Files Changed**:
-- `backend/src/services/llmResponder.js`
-
-## 2026-07-09 — Fixed Product Response Silent Failures and Terse FAQ Replies
-**What**: Added fallback logic in `webhook.js` so that if Meta API rejects a rich product or catalog card (e.g. if the SKU is missing from the Meta Catalog), the system gracefully falls back to sending standard text/image messages rather than silently dropping the message. Also updated `llmResponder.js` to instruct DeepSeek to use the EXACT phrasing from the FAQs rather than truncating responses (like replying "surat" instead of the full address).
-**Why**: Customers inquiring about specific products were not getting replies if their `sku` wasn't perfectly synced in the Meta Commerce Manager. Also, DeepSeek was overly abbreviating FAQ answers, resulting in dry, unformatted responses.
-**Files Changed**:
-- `backend/src/routes/webhook.js`
-- `backend/src/services/llmResponder.js`
-
 ## 2026-07-09 — Fixed Product Card Rendering and Added Website Link
 **What**: Fixed an issue where the DeepSeek responder crashed because `p._id` was undefined in the `smartResponder` cache map. Added `_id` and `sku` mappings in `smartResponder.js`. Also updated `webhook.js` to automatically generate a `https://narmadaessence.com/products/{slug}` link and append it to the product card caption so users have a clickable text link in addition to the native WhatsApp catalog button.
 **Why**: When the LLM successfully identified a product, the backend crashed trying to parse its ID, falling back to sending raw text (`"Here is the product you asked for!"`) instead of the rich WhatsApp Product Card. Additionally, users wanted an explicit website link to share easily.
