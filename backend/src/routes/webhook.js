@@ -718,10 +718,18 @@ router.post('/', async (req, res) => {
                                     interactionType = 'product_answer';
                                     interactionMetadata.product_id = product._id || product.id;
                                     const description = sanitizeProductDescriptionForCatalogue(product.description);
+                                    
+                                    // Generate website product link based on name slug
+                                    const slug = product.name ? product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
+                                    const productLink = slug ? `https://narmadaessence.com/products/${slug}` : 'https://narmadaessence.com/';
+                                    
                                     const caption = [
                                         `*${product.name}*`,
                                         description,
-                                        `Price: ₹${productPriceAmount(product)}`
+                                        `Price: ₹${productPriceAmount(product)}`,
+                                        ``,
+                                        `🔗 Buy on Website:`,
+                                        productLink
                                     ].filter(Boolean).join('\n');
 
                                     if (setting.whatsapp_catalog_id && product.sku) {

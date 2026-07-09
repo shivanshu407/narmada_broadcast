@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-09 — Fixed Product Card Rendering and Added Website Link
+**What**: Fixed an issue where the DeepSeek responder crashed because `p._id` was undefined in the `smartResponder` cache map. Added `_id` and `sku` mappings in `smartResponder.js`. Also updated `webhook.js` to automatically generate a `https://narmadaessence.com/products/{slug}` link and append it to the product card caption so users have a clickable text link in addition to the native WhatsApp catalog button.
+**Why**: When the LLM successfully identified a product, the backend crashed trying to parse its ID, falling back to sending raw text (`"Here is the product you asked for!"`) instead of the rich WhatsApp Product Card. Additionally, users wanted an explicit website link to share easily.
+**Files Changed**:
+- `backend/src/services/smartResponder.js`
+- `backend/src/services/llmResponder.js`
+- `backend/src/routes/webhook.js`
+
 ## 2026-07-09 — Support DeepSeek Native Product Cards and Catalog Links
 **What**: Updated `llmResponder.js` to prompt DeepSeek for structured JSON output (`type: 'product'`, `type: 'catalog_link'`, `type: 'faq'`) and updated `webhook.js` to process these types natively into rich WhatsApp interactive messages.
 **Why**: DeepSeek was previously outputting product details as raw text rather than invoking the native WhatsApp Product Cards and Catalog Links that the system supports. By forcing JSON outputs, the LLM now acts as a routing intelligence engine capable of triggering rich UI elements.

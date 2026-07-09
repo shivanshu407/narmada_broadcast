@@ -184,8 +184,10 @@ export async function getTenantKnowledge(tenantId, { force = false } = {}) {
     const prodRows = await Product.find({ inventory_available: { $ne: false } });
     const products = prodRows
         .map((p) => ({
+            _id: p._id,
             id: p._id.toString(),
             name: p.name,
+            sku: p.sku,
             description: sanitizeProductDescriptionForCatalogue(p.description),
             mrp: p.mrp,
             selling_price: p.selling_price,

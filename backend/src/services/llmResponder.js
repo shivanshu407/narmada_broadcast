@@ -93,7 +93,8 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             if (parsed.type === 'product' && parsed.productId) {
                 const searchId = String(parsed.productId).toLowerCase();
                 const p = products.find(prod => 
-                    prod._id.toString() === parsed.productId || 
+                    (prod._id && prod._id.toString() === parsed.productId) || 
+                    (prod.id === parsed.productId) ||
                     (prod.name && prod.name.toLowerCase().includes(searchId)) ||
                     (prod.sku && prod.sku.toLowerCase() === searchId) ||
                     (searchId.includes(prod.name?.toLowerCase()))
