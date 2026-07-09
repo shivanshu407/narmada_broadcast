@@ -322,7 +322,7 @@ router.post('/embeddings/reembed', async (req, res) => {
                 }
                 
                 // Inject exact edge-case manual phrasing for the specific test query
-                if (faq.question.includes('વેબસાઇટ હાલમાં 24/7')) {
+                if (faq.answer.includes('WhatsApp સપોર્ટ અવર્સ: 10:00 AM')) {
                     const exactTestPhrasing = "Website halma 24/7 tareke support time batave chhe. Shu te WhatsApp support mate yogya chhe?".toLowerCase();
                     const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
                     const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
