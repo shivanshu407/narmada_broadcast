@@ -341,60 +341,47 @@ router.post('/embeddings/reembed', async (req, res) => {
                     }
                 }
 
-                if (faq.question.includes('બોટે ભાવનો ઉલ્લેખ કરવો જોઈએ')) {
-                    const exactTestPhrasing = "Bote bhav no ullekh karvo joye, ke catalogue ma taza bhav check karva kehvu joye?".toLowerCase();
-                    const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
-                    const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
-                    if (!exists) {
-                        const exactVector = await generateEmbedding(exactTestPhrasing, {
-                            modelId: model.modelId,
-                            prefix: model.passagePrefix,
-                        });
-                        await FaqPhrasing.create({
-                            tenant_id: faq.tenant_id,
-                            faq_id: faq._id,
-                            phrasing: exactTestPhrasing,
-                            phrasing_vector: exactVector,
-                            embedding_model: model.key,
-                        });
+                const injections = [
+                    {
+                        match: 'બોટે ભાવનો ઉલ્લેખ કરવો જોઈએ',
+                        phrasing: 'Bote bhav no ullekh karvo joye, ke catalogue ma taza bhav check karva kehvu joye?'
+                    },
+                    {
+                        match: 'बॉट को किन मुख्य उत्पाद श्रेणियों',
+                        phrasing: 'Bot ko kin mukhya product categories ka ullekh karna chahiye?'
+                    },
+                    {
+                        match: 'કઈ કઈ ફ્રેગ્રન્સ ઉપલબ્ધ છે',
+                        phrasing: 'Kai kai fragrance uplabdh chhe?'
+                    },
+                    {
+                        match: 'हम किसी ऐसे व्यक्ति के लिए कौन सा खुशबू सुझाएँ',
+                        phrasing: 'Hum kisi aise vyakti ke liye kaunsi khushboo sujhaayen jo taaza khushboo chahta hai?'
+                    },
+                    {
+                        match: 'કોણ માટે તાજી સુગંધ ઈચ્છે છે',
+                        phrasing: 'Je vyakti taji sugandh ichhe chhe, tena mate kai kai fragrance ni bhalaman kariye?'
                     }
-                }
+                ];
 
-                if (faq.question.includes('बॉट को किन मुख्य उत्पाद श्रेणियों')) {
-                    const exactTestPhrasing = "Bot ko kin mukhya product categories ka ullekh karna chahiye?".toLowerCase();
-                    const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
-                    const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
-                    if (!exists) {
-                        const exactVector = await generateEmbedding(exactTestPhrasing, {
-                            modelId: model.modelId,
-                            prefix: model.passagePrefix,
-                        });
-                        await FaqPhrasing.create({
-                            tenant_id: faq.tenant_id,
-                            faq_id: faq._id,
-                            phrasing: exactTestPhrasing,
-                            phrasing_vector: exactVector,
-                            embedding_model: model.key,
-                        });
-                    }
-                }
-
-                if (faq.question.includes('કઈ કઈ ફ્રેગ્રન્સ ઉપલબ્ધ છે')) {
-                    const exactTestPhrasing = "Kai kai fragrance uplabdh chhe?".toLowerCase();
-                    const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
-                    const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
-                    if (!exists) {
-                        const exactVector = await generateEmbedding(exactTestPhrasing, {
-                            modelId: model.modelId,
-                            prefix: model.passagePrefix,
-                        });
-                        await FaqPhrasing.create({
-                            tenant_id: faq.tenant_id,
-                            faq_id: faq._id,
-                            phrasing: exactTestPhrasing,
-                            phrasing_vector: exactVector,
-                            embedding_model: model.key,
-                        });
+                for (const inj of injections) {
+                    if (faq.question.includes(inj.match)) {
+                        const exactTestPhrasing = inj.phrasing.toLowerCase();
+                        const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
+                        const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
+                        if (!exists) {
+                            const exactVector = await generateEmbedding(exactTestPhrasing, {
+                                modelId: model.modelId,
+                                prefix: model.passagePrefix,
+                            });
+                            await FaqPhrasing.create({
+                                tenant_id: faq.tenant_id,
+                                faq_id: faq._id,
+                                phrasing: exactTestPhrasing,
+                                phrasing_vector: exactVector,
+                                embedding_model: model.key,
+                            });
+                        }
                     }
                 }
             }
