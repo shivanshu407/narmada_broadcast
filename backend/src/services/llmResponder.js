@@ -80,11 +80,18 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         
         if (!replyRaw) return null;
 
+        // Strip markdown formatting if DeepSeek wrapped it
+        const jsonString = replyRaw.replace(/^```json/m, '').replace(/^```/m, '').replace(/```$/m, '').trim();
+
         try {
-            const parsed = JSON.parse(replyRaw);
+            const parsed = JSON.parse(jsonString);
             
             if (parsed.type === 'product' && parsed.productId) {
-                const p = products.find(prod => prod._id.toString() === parsed.productId);
+                const p = products.find(prod => 
+                    prod._id.toString() === parsed.productId || 
+                    prod.name === parsed.productId ||
+                    prod.sku === parsed.productId
+                );
                 if (p) {
                     return {
                         type: 'product',
