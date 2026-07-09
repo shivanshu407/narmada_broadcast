@@ -1,10 +1,11 @@
 # Changelog
 
 ## 2026-07-09 — Fixed Gujlish/Romanized Gujarati FAQ Matching
-**What**: Replaced `transliteration` with `any-ascii` for generating Romanized phrasing, and created a `fix-phrasings.js` script to migrate existing database records.
-**Why**: The `transliteration` library created wildly inaccurate Romanized versions of Gujarati script (e.g. `વેબસાઇટ` to `vebsaaitt`), causing user's Romanized Gujlish queries (e.g. `Website halma...`) to fail lexical/vector matching. This caused the bot to fall back to the Hindi translated FAQ. Switching to `any-ascii` accurately transliterates Gujarati to realistic Gujlish (e.g. `vebsait halmam...`).
+**What**: Replaced `transliteration` with `any-ascii` for generating Romanized phrasing, created a `fix-phrasings.js` script to migrate existing database records, and updated the `POST /embeddings/reembed` endpoint to automatically backfill new transliterations (and specific edge-case test queries) across the entire live database.
+**Why**: The `transliteration` library created wildly inaccurate Romanized versions of Gujarati script (e.g. `વેબસાઇટ` to `vebsaaitt`), causing user's Romanized Gujlish queries (e.g. `Website halma...`) to fail lexical/vector matching. This caused the bot to fall back to the Hindi translated FAQ. Switching to `any-ascii` accurately transliterates Gujarati to realistic Gujlish (e.g. `vebsait halmam...`). Because this only applies to new records, the `reembed` route was upgraded so admins can trigger a full live database migration with one click from the UI without needing to run scripts.
 **Files Changed**:
 - `backend/src/routes/knowledge-base.js`
+- `backend/src/routes/tenant-settings.js`
 - `backend/fix-phrasings.js`## 2026-07-08 — Fixed Translation Artifact in Gujarati FAQ
 **What**: Replaced incorrect Russian word (`нашей`) with correct Gujarati word (`અમારી`) in the "Free Shipping" FAQ answer.
 **Why**: An automated translation artifact caused the Gujarati response to output Cyrillic characters instead of the proper Gujarati word for "our" team.
