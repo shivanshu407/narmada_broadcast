@@ -46,6 +46,7 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         contextText += "2. You MUST respond in pure JSON format.\n";
         contextText += `   - If answering a general question: { "type": "faq", "text": "Your answer in the correct language" }\n`;
         contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "exact_id_from_above", "text": "Here is the product you asked for!" }\n`;
+        contextText += `   - If the user asks to see your catalog, all products, or a list of your items: { "type": "catalog_link", "text": "Here is our complete catalog!" }\n`;
         contextText += "3. Keep your answers brief and friendly.\n";
         contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
 
@@ -94,6 +95,16 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
                         _source: 'deepseek_llm'
                     };
                 }
+            }
+
+            if (parsed.type === 'catalog_link') {
+                return {
+                    type: 'catalog_link',
+                    text: parsed.text || "Here is our complete catalog!",
+                    confidence: 'high',
+                    band: 'high',
+                    _source: 'deepseek_llm'
+                };
             }
 
             return {
