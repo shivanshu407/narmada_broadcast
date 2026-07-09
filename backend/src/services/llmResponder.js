@@ -42,7 +42,7 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         }
 
         contextText += "\nCRITICAL RULES:\n";
-        contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script (e.g. કેમ છો), reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script, e.g. 'tamari shop kya che'), your answer MUST be in Gujlish/Hinglish (e.g. 'Amari shop Surat ma aaveli che'). NEVER use native scripts unless the user used them.\n";
+        contextText += "1. LANGUAGE MATCHING: If the user writes in English, reply in English. If the user writes in Gujarati (whether using native script or Gujlish/Roman script like 'tamari shop kya che'), you MUST reply in native Gujarati script (e.g. 'અમારી દુકાન સુરતમાં આવેલી છે'). If the user writes in Hindi (whether native or Hinglish), you MUST reply in native Hindi script. NEVER reply in Romanized Gujlish or Hinglish.\n";
         contextText += "2. You MUST respond in pure JSON format.\n";
         contextText += `   - If answering a general question: { "type": "faq", "text": "Your complete, full-sentence answer in the correct language" }\n`;
         contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "the_Product_ID_here", "text": "Here is the product you asked for!" } (You MUST use the exact Product ID, NOT the Name)\n`;
