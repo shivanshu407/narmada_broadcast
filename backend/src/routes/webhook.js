@@ -741,10 +741,23 @@ router.post('/', async (req, res) => {
                                                 product_retailer_id: product.sku
                                             }
                                         };
-                                        const { sendInteractiveMessage } = await import('../services/whatsapp.js');
-                                        result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
-                                        textToSave = caption;
-                                        typeToSave = 'interactive';
+                                        try {
+                                            const { sendInteractiveMessage } = await import('../services/whatsapp.js');
+                                            result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
+                                            textToSave = caption;
+                                            typeToSave = 'interactive';
+                                        } catch (metaErr) {
+                                            console.warn('[Webhook] Meta API rejected product interactive message, falling back to media/text:', metaErr.message);
+                                            // Fallback
+                                            if (product.image_url) {
+                                                result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
+                                                textToSave = caption;
+                                                typeToSave = 'image';
+                                            } else {
+                                                result = await sendTextMessage(fromPhone, caption, setting);
+                                                textToSave = caption;
+                                            }
+                                        }
                                     } else if (product.image_url) {
                                         result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
                                         textToSave = caption;
@@ -762,10 +775,17 @@ router.post('/', async (req, res) => {
                                             name: "catalog_message"
                                         }
                                     };
-                                    const { sendInteractiveMessage } = await import('../services/whatsapp.js');
-                                    result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
-                                    textToSave = botReply.text || "Here is our complete catalog!";
-                                    typeToSave = 'interactive';
+                                    try {
+                                        const { sendInteractiveMessage } = await import('../services/whatsapp.js');
+                                        result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
+                                        textToSave = botReply.text || "Here is our complete catalog!";
+                                        typeToSave = 'interactive';
+                                    } catch (metaErr) {
+                                        console.warn('[Webhook] Meta API rejected catalog interactive message, falling back to text:', metaErr.message);
+                                        result = await sendTextMessage(fromPhone, botReply.text || "Here is our complete catalog!", setting);
+                                        textToSave = botReply.text || "Here is our complete catalog!";
+                                        typeToSave = 'text';
+                                    }
                                 }
 
                                 if (result && result.messageId) {

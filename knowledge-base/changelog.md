@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-09 — Fixed Product Response Silent Failures and Terse FAQ Replies
+**What**: Added fallback logic in `webhook.js` so that if Meta API rejects a rich product or catalog card (e.g. if the SKU is missing from the Meta Catalog), the system gracefully falls back to sending standard text/image messages rather than silently dropping the message. Also updated `llmResponder.js` to instruct DeepSeek to use the EXACT phrasing from the FAQs rather than truncating responses (like replying "surat" instead of the full address).
+**Why**: Customers inquiring about specific products were not getting replies if their `sku` wasn't perfectly synced in the Meta Commerce Manager. Also, DeepSeek was overly abbreviating FAQ answers, resulting in dry, unformatted responses.
+**Files Changed**:
+- `backend/src/routes/webhook.js`
+- `backend/src/services/llmResponder.js`
+
 ## 2026-07-09 — Fixed Product Card Rendering and Added Website Link
 **What**: Fixed an issue where the DeepSeek responder crashed because `p._id` was undefined in the `smartResponder` cache map. Added `_id` and `sku` mappings in `smartResponder.js`. Also updated `webhook.js` to automatically generate a `https://narmadaessence.com/products/{slug}` link and append it to the product card caption so users have a clickable text link in addition to the native WhatsApp catalog button.
 **Why**: When the LLM successfully identified a product, the backend crashed trying to parse its ID, falling back to sending raw text (`"Here is the product you asked for!"`) instead of the rich WhatsApp Product Card. Additionally, users wanted an explicit website link to share easily.
