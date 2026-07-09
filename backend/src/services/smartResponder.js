@@ -228,6 +228,18 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
 
     let retrievalReply = null;
     let deferredFlowReply = null;
+    
+    // Attempt DeepSeek LLM responder first
+    try {
+        const { generateLLMReply } = await import('./llmResponder.js');
+        const llmReply = await generateLLMReply(tenantId, messageBody, chatHistory, context.tenant);
+        if (llmReply) {
+            return await applySmartFlowSlots(llmReply, context, botSettings);
+        }
+    } catch (err) {
+        console.error('[SmartResponder] DeepSeek LLM failed, falling back to local retrieval:', err.message);
+    }
+
     if (flagEnabled(botSettings, 'retrieval_v2')) {
         try {
             const { retrieveAnswer } = await import('./retrievalEngine.js');

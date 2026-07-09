@@ -6,7 +6,20 @@
 **Files Changed**:
 - `backend/src/routes/knowledge-base.js`
 - `backend/src/routes/tenant-settings.js`
-- `backend/fix-phrasings.js`## 2026-07-08 — Fixed Translation Artifact in Gujarati FAQ
+- `backend/fix-phrasings.js`
+
+## 2026-07-09 — Added Manual Edge-Case Phrasings for Gujlish/Hinglish
+**What**: Injected two manual Alternate Phrasings in `reembed` script for specific edge-case Gujlish and Hinglish queries.
+**Why**: Automated `any-ascii` phonetic mapping fails when users mix English translation words (like "catalogue", "check", or "product categories") into their Romanized vernacular queries.
+**Files Changed**: `backend/src/routes/tenant-settings.js`
+- Added explicit mapping for Gujlish query "Bote bhav no ullekh..." to its Gujarati FAQ.
+- Added explicit mapping for Hinglish query "Bot ko kin mukhya product categories..." to its Hindi FAQ.
+- Added explicit mapping for Gujlish query "Kai kai fragrance uplabdh chhe?" to its Gujarati FAQ.
+- Added explicit mapping for Hinglish query "Hum kisi aise vyakti ke liye..." to its Hindi FAQ.
+- Added explicit mapping for Gujlish query "Je vyakti taji sugandh ichhe chhe..." to its Gujarati FAQ.
+- Recommended users leverage the existing "Alternate Phrasings" UI to manage future edge-cases.
+
+## 2026-07-08 — Fixed Translation Artifact in Gujarati FAQ
 **What**: Replaced incorrect Russian word (`нашей`) with correct Gujarati word (`અમારી`) in the "Free Shipping" FAQ answer.
 **Why**: An automated translation artifact caused the Gujarati response to output Cyrillic characters instead of the proper Gujarati word for "our" team.
 **Files Changed**:
