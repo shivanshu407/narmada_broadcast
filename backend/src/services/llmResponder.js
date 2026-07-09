@@ -37,14 +37,17 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             contextText += "--- PRODUCTS IN STOCK ---\n";
             products.forEach(p => {
                 const desc = sanitizeProductDescriptionForCatalogue(p.description);
-                contextText += `Product: ${p.name}\nCategory: ${p.category || 'General'}\nPrice: ₹${p.selling_price || p.mrp}\nDescription: ${desc}\n\n`;
+                contextText += `Product ID: ${p._id}\nName: ${p.name}\nCategory: ${p.category || 'General'}\nPrice: ₹${p.selling_price || p.mrp}\nDescription: ${desc}\n\n`;
             });
         }
 
         contextText += "\nCRITICAL RULES:\n";
         contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script, reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script), reply in Roman script. Do NOT translate their language into the language of the FAQs.\n";
-        contextText += "2. Keep your answers brief, friendly, and formatted nicely for WhatsApp.\n";
-        contextText += "3. NEVER invent prices, products, or policies not listed above.\n";
+        contextText += "2. You MUST respond in pure JSON format.\n";
+        contextText += `   - If answering a general question: { "type": "faq", "text": "Your answer in the correct language" }\n`;
+        contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "exact_id_from_above", "text": "Here is the product you asked for!" }\n`;
+        contextText += "3. Keep your answers brief and friendly.\n";
+        contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
 
         const messages = [
             { role: "system", content: contextText }
@@ -68,20 +71,48 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             model: "deepseek-chat",
             messages: messages,
             max_tokens: 400,
-            temperature: 0.2, // Low temp for factual accuracy
+            temperature: 0.1, // Lower temp for strict JSON adherence
+            response_format: { type: "json_object" }
         });
 
-        const replyText = response.choices[0]?.message?.content?.trim();
+        const replyRaw = response.choices[0]?.message?.content?.trim();
         
-        if (!replyText) return null;
+        if (!replyRaw) return null;
 
-        return {
-            type: 'faq', // We return as 'faq' type so the main loop sends it directly
-            text: replyText,
-            confidence: 'high',
-            band: 'high',
-            _source: 'deepseek_llm'
-        };
+        try {
+            const parsed = JSON.parse(replyRaw);
+            
+            if (parsed.type === 'product' && parsed.productId) {
+                const p = products.find(prod => prod._id.toString() === parsed.productId);
+                if (p) {
+                    return {
+                        type: 'product',
+                        data: p,
+                        text: parsed.text || "Here is the product:",
+                        confidence: 'high',
+                        band: 'high',
+                        _source: 'deepseek_llm'
+                    };
+                }
+            }
+
+            return {
+                type: 'faq', 
+                text: parsed.text || replyRaw,
+                confidence: 'high',
+                band: 'high',
+                _source: 'deepseek_llm'
+            };
+        } catch (e) {
+            console.error('[LLMResponder] Failed to parse JSON, falling back to raw text');
+            return {
+                type: 'faq',
+                text: replyRaw,
+                confidence: 'high',
+                band: 'high',
+                _source: 'deepseek_llm'
+            };
+        }
 
     } catch (error) {
         console.error('[LLMResponder] DeepSeek API Error:', error);
