@@ -16,6 +16,7 @@
     "dependencies": {
         "@huggingface/transformers": "^4.2.0",
         "@vitalets/google-translate-api": "^9.2.1",
+        "any-ascii": "^0.3.3",
         "bcryptjs": "^2.4.3",
         "bing-translate-api": "^4.2.0",
         "cors": "^2.8.5",

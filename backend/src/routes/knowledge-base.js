@@ -181,9 +181,9 @@ router.post('/', async (req, res) => {
         await faq.save();
         
         // Auto-transliterate Hindi/Gujarati to Romanized phrasing
-        const { transliterate } = await import('transliteration');
+        const anyAscii = (await import('any-ascii')).default;
         if (/[^\x00-\x7F]/.test(question)) {
-            const rom = transliterate(question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+            const rom = anyAscii(question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
             if (rom && rom.length > 2) {
                 const romEmbedding = await optionalEmbedding(rom, req.tenant?.bot_settings || {});
                 await FaqPhrasing.create({
@@ -231,9 +231,9 @@ router.post('/import', async (req, res) => {
             imported++;
 
             // Auto-transliterate Hindi/Gujarati to Romanized phrasing
-            const { transliterate } = await import('transliteration');
+            const anyAscii = (await import('any-ascii')).default;
             if (/[^\x00-\x7F]/.test(f.question)) {
-                const rom = transliterate(f.question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+                const rom = anyAscii(f.question).toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
                 if (rom && rom.length > 2) {
                     const romEmbedding = await optionalEmbedding(rom, req.tenant?.bot_settings || {});
                     await FaqPhrasing.create({
