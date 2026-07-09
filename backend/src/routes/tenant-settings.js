@@ -359,6 +359,25 @@ router.post('/embeddings/reembed', async (req, res) => {
                         });
                     }
                 }
+
+                if (faq.question.includes('बॉट को किन मुख्य उत्पाद श्रेणियों')) {
+                    const exactTestPhrasing = "Bot ko kin mukhya product categories ka ullekh karna chahiye?".toLowerCase();
+                    const { default: FaqPhrasing } = await import('../models/FaqPhrasing.js');
+                    const exists = await FaqPhrasing.findOne({ faq_id: faq._id, phrasing: exactTestPhrasing });
+                    if (!exists) {
+                        const exactVector = await generateEmbedding(exactTestPhrasing, {
+                            modelId: model.modelId,
+                            prefix: model.passagePrefix,
+                        });
+                        await FaqPhrasing.create({
+                            tenant_id: faq.tenant_id,
+                            faq_id: faq._id,
+                            phrasing: exactTestPhrasing,
+                            phrasing_vector: exactVector,
+                            embedding_model: model.key,
+                        });
+                    }
+                }
             }
         }
 
