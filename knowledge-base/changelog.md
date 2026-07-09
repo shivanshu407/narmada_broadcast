@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-09 — Enforce Native Script Outputs for Romanized Queries
+**What**: Updated the DeepSeek system prompt in `llmResponder.js` to strictly output native Gujarati script (`અમારી દુકાન...`) when a user types in Romanized Gujlish (`tamari shop kya che`), and similarly for Hindi/Hinglish.
+**Why**: The user specifically requested that responses be in the native Gujarati language script rather than matching the Romanized input format.
+**Files Changed**:
+- `backend/src/services/llmResponder.js`
+
 ## 2026-07-09 — Fixed Terse Responses and Gujlish Script Matching
 **What**: Updated the DeepSeek system prompt in `llmResponder.js` to explicitly require "complete, polite, and helpful answers" instead of brief one-word answers. Also strengthened the language matching rule to provide explicit examples of Gujlish (e.g. `Amari shop Surat ma aaveli che`) to prevent the LLM from incorrectly outputting native Gujarati script when the user typed in Roman script.
 **Why**: The bot was replying with single words like "સુરત" (in Gujarati script) when users asked "tamari shop kya che" (in Roman script), because the prompt was too strongly biased toward brevity and the LLM defaulted to translating to the native script of the geographic entity.
