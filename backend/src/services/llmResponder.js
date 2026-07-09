@@ -42,12 +42,12 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         }
 
         contextText += "\nCRITICAL RULES:\n";
-        contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script, reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script), reply in Roman script. Do NOT translate their language into the language of the FAQs.\n";
+        contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script (e.g. કેમ છો), reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script, e.g. 'tamari shop kya che'), your answer MUST be in Gujlish/Hinglish (e.g. 'Amari shop Surat ma aaveli che'). NEVER use native scripts unless the user used them.\n";
         contextText += "2. You MUST respond in pure JSON format.\n";
-        contextText += `   - If answering a general question found in the FAQs: { "type": "faq", "text": "EXACT_ANSWER_FROM_FAQ_HERE" } (You MUST use the exact phrasing from the 'A:' field in the FAQs)\n`;
+        contextText += `   - If answering a general question: { "type": "faq", "text": "Your complete, full-sentence answer in the correct language" }\n`;
         contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "the_Product_ID_here", "text": "Here is the product you asked for!" } (You MUST use the exact Product ID, NOT the Name)\n`;
         contextText += `   - If the user asks to see your catalog, all products, or a list of your items: { "type": "catalog_link", "text": "Here is our complete catalog!" }\n`;
-        contextText += "3. Keep your answers brief and friendly.\n";
+        contextText += "3. FULL & HELPFUL ANSWERS: Provide complete, polite, and helpful answers. Do NOT give one-word answers (like just 'Surat'). Formulate full, natural sentences based on the context.\n";
         contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
 
         const messages = [
