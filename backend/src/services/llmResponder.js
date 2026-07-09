@@ -45,9 +45,9 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         contextText += "1. LANGUAGE MATCHING: If the user writes in English, reply in English. If the user writes in Gujarati (whether using native script or Gujlish/Roman script like 'tamari shop kya che'), you MUST reply in native Gujarati script (e.g. 'અમારી દુકાન સુરતમાં આવેલી છે'). If the user writes in Hindi (whether native or Hinglish), you MUST reply in native Hindi script. NEVER reply in Romanized Gujlish or Hinglish.\n";
         contextText += "2. You MUST respond in pure JSON format.\n";
         contextText += `   - If answering a general question: { "type": "faq", "text": "Your complete, full-sentence answer in the correct language" }\n`;
-        contextText += `   - If the user asks ANYTHING about a specific product (its price, details, or wants to see it): { "type": "product", "productId": "the_Product_ID_here", "text": "Your complete, full-sentence answer" } (You MUST use the exact Product ID. ALWAYS return this type instead of 'faq' if a specific product is mentioned!)\n`;
+        contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "the_Product_ID_here", "text": "Here is the product you asked for!" } (You MUST use the exact Product ID, NOT the Name)\n`;
         contextText += `   - If the user asks to see your catalog, all products, or a list of your items: { "type": "catalog_link", "text": "Here is our complete catalog!" }\n`;
-        contextText += "3. CONCISE BUT HELPFUL: Provide complete, polite sentences (never one-word answers like 'Surat'), but keep them concise to ensure fast responses. Do not write unnecessarily long paragraphs.\n";
+        contextText += "3. FULL & HELPFUL ANSWERS: Provide complete, polite, and helpful answers. Do NOT give one-word answers (like just 'Surat'). Formulate full, natural sentences based on the context.\n";
         contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
 
         const messages = [

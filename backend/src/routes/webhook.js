@@ -748,31 +748,20 @@ router.post('/', async (req, res) => {
                                             typeToSave = 'interactive';
                                         } catch (metaErr) {
                                             console.warn('[Webhook] Meta API rejected product interactive message, falling back to media/text:', metaErr.message);
-                                            try {
-                                                if (product.image_url) {
-                                                    result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
-                                                    textToSave = caption;
-                                                    typeToSave = 'image';
-                                                } else {
-                                                    result = await sendTextMessage(fromPhone, caption, setting);
-                                                    textToSave = caption;
-                                                }
-                                            } catch (mediaErr) {
-                                                console.warn('[Webhook] Fallback media message failed, sending raw text:', mediaErr.message);
+                                            // Fallback
+                                            if (product.image_url) {
+                                                result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
+                                                textToSave = caption;
+                                                typeToSave = 'image';
+                                            } else {
                                                 result = await sendTextMessage(fromPhone, caption, setting);
                                                 textToSave = caption;
                                             }
                                         }
                                     } else if (product.image_url) {
-                                        try {
-                                            result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
-                                            textToSave = caption;
-                                            typeToSave = 'image';
-                                        } catch (mediaErr) {
-                                            console.warn('[Webhook] Media message failed, sending raw text:', mediaErr.message);
-                                            result = await sendTextMessage(fromPhone, caption, setting);
-                                            textToSave = caption;
-                                        }
+                                        result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
+                                        textToSave = caption;
+                                        typeToSave = 'image';
                                     } else {
                                         result = await sendTextMessage(fromPhone, caption, setting);
                                         textToSave = caption;
