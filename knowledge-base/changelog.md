@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-09 — Support DeepSeek Native Product Cards and Catalog Links
+**What**: Updated `llmResponder.js` to prompt DeepSeek for structured JSON output (`type: 'product'`, `type: 'catalog_link'`, `type: 'faq'`) and updated `webhook.js` to process these types natively into rich WhatsApp interactive messages.
+**Why**: DeepSeek was previously outputting product details as raw text rather than invoking the native WhatsApp Product Cards and Catalog Links that the system supports. By forcing JSON outputs, the LLM now acts as a routing intelligence engine capable of triggering rich UI elements.
+**Files Changed**:
+- `backend/src/services/llmResponder.js`
+- `backend/src/routes/webhook.js`
+
 ## 2026-07-09 — Fixed Gujlish/Romanized Gujarati FAQ Matching
 **What**: Replaced `transliteration` with `any-ascii` for generating Romanized phrasing, created a `fix-phrasings.js` script to migrate existing database records, and updated the `POST /embeddings/reembed` endpoint to automatically backfill new transliterations (and specific edge-case test queries) across the entire live database.
 **Why**: The `transliteration` library created wildly inaccurate Romanized versions of Gujarati script (e.g. `વેબસાઇટ` to `vebsaaitt`), causing user's Romanized Gujlish queries (e.g. `Website halma...`) to fail lexical/vector matching. This caused the bot to fall back to the Hindi translated FAQ. Switching to `any-ascii` accurately transliterates Gujarati to realistic Gujlish (e.g. `vebsait halmam...`). Because this only applies to new records, the `reembed` route was upgraded so admins can trigger a full live database migration with one click from the UI without needing to run scripts.
