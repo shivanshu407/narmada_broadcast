@@ -45,7 +45,7 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script, reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script), reply in Roman script. Do NOT translate their language into the language of the FAQs.\n";
         contextText += "2. You MUST respond in pure JSON format.\n";
         contextText += `   - If answering a general question: { "type": "faq", "text": "Your answer in the correct language" }\n`;
-        contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "exact_id_from_above", "text": "Here is the product you asked for!" }\n`;
+        contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "the_Product_ID_here", "text": "Here is the product you asked for!" } (You MUST use the exact Product ID, NOT the Name)\n`;
         contextText += `   - If the user asks to see your catalog, all products, or a list of your items: { "type": "catalog_link", "text": "Here is our complete catalog!" }\n`;
         contextText += "3. Keep your answers brief and friendly.\n";
         contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
@@ -80,17 +80,23 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         
         if (!replyRaw) return null;
 
-        // Strip markdown formatting if DeepSeek wrapped it
-        const jsonString = replyRaw.replace(/^```json/m, '').replace(/^```/m, '').replace(/```$/m, '').trim();
+        // Robustly extract JSON from markdown if present
+        let jsonString = replyRaw;
+        const jsonMatch = replyRaw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+        if (jsonMatch && jsonMatch[1]) {
+            jsonString = jsonMatch[1].trim();
+        }
 
         try {
             const parsed = JSON.parse(jsonString);
             
             if (parsed.type === 'product' && parsed.productId) {
+                const searchId = String(parsed.productId).toLowerCase();
                 const p = products.find(prod => 
                     prod._id.toString() === parsed.productId || 
-                    prod.name === parsed.productId ||
-                    prod.sku === parsed.productId
+                    (prod.name && prod.name.toLowerCase().includes(searchId)) ||
+                    (prod.sku && prod.sku.toLowerCase() === searchId) ||
+                    (searchId.includes(prod.name?.toLowerCase()))
                 );
                 if (p) {
                     return {
@@ -123,9 +129,22 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             };
         } catch (e) {
             console.error('[LLMResponder] Failed to parse JSON, falling back to raw text');
+            
+            // Safety net to prevent raw JSON from leaking to the customer if parse fails
+            let fallbackText = jsonString;
+            const textMatch = jsonString.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
+            if (textMatch && textMatch[1]) {
+                fallbackText = textMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+            } else {
+                // Strip JSON braces if it looks like an object
+                if (fallbackText.startsWith('{') && fallbackText.endsWith('}')) {
+                    fallbackText = "I found the product, please check our catalog!";
+                }
+            }
+
             return {
                 type: 'faq',
-                text: replyRaw,
+                text: fallbackText,
                 confidence: 'high',
                 band: 'high',
                 _source: 'deepseek_llm'
