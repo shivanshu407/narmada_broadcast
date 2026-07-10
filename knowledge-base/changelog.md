@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-10 — Hardened DeepSeek LLM Responder (Timeout & JSON Parsing)
+**What**: Added a strict 5000ms timeout to the OpenAI client inside `llmResponder.js`. Added explicit prompt instructions forbidding JSON output, and added a defensive JSON parser for `replyText`.
+**Why**: 
+1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts and falls back to local vector retrieval if it's too slow.
+2. The LLM was occasionally hallucinating JSON structures (e.g. `{"type": "faq", "text": "..."}`) and sending literal JSON to customers on WhatsApp. We now explicitly forbid it in the prompt and defensively parse the raw response just in case.
+**Files Changed**:
+- `backend/src/services/llmResponder.js`
+
 ## 2026-07-09 — Replaced Local AI with DeepSeek LLM & Fixed Language Switching
 **What**: Completely replaced the local vector AI engine (`Xenova/multilingual-e5-small`) with DeepSeek Chat LLM for the auto-responder, and enforced strict language matching.
 **Why**: The local AI model failed to comprehend Hinglish/Gujlish slang consistently. The DeepSeek API is now directly injected into the smart reply flow, providing real-time generative responses based on the entire FAQ and Product database. Furthermore, DeepSeek's prompt was updated to strictly enforce mirroring the user's input language/script, preventing it from defaulting to the language of the FAQs.

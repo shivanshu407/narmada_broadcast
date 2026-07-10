@@ -718,18 +718,10 @@ router.post('/', async (req, res) => {
                                     interactionType = 'product_answer';
                                     interactionMetadata.product_id = product._id || product.id;
                                     const description = sanitizeProductDescriptionForCatalogue(product.description);
-                                    
-                                    // Generate website product link based on name slug
-                                    const slug = product.name ? product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
-                                    const productLink = slug ? `https://narmadaessence.com/products/${slug}` : 'https://narmadaessence.com/';
-                                    
                                     const caption = [
                                         `*${product.name}*`,
                                         description,
-                                        `Price: ₹${productPriceAmount(product)}`,
-                                        ``,
-                                        `🔗 Buy on Website:`,
-                                        productLink
+                                        `Price: ₹${productPriceAmount(product)}`
                                     ].filter(Boolean).join('\n');
 
                                     if (setting.whatsapp_catalog_id && product.sku) {
@@ -741,23 +733,10 @@ router.post('/', async (req, res) => {
                                                 product_retailer_id: product.sku
                                             }
                                         };
-                                        try {
-                                            const { sendInteractiveMessage } = await import('../services/whatsapp.js');
-                                            result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
-                                            textToSave = caption;
-                                            typeToSave = 'interactive';
-                                        } catch (metaErr) {
-                                            console.warn('[Webhook] Meta API rejected product interactive message, falling back to media/text:', metaErr.message);
-                                            // Fallback
-                                            if (product.image_url) {
-                                                result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
-                                                textToSave = caption;
-                                                typeToSave = 'image';
-                                            } else {
-                                                result = await sendTextMessage(fromPhone, caption, setting);
-                                                textToSave = caption;
-                                            }
-                                        }
+                                        const { sendInteractiveMessage } = await import('../services/whatsapp.js');
+                                        result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
+                                        textToSave = caption;
+                                        typeToSave = 'interactive';
                                     } else if (product.image_url) {
                                         result = await sendMediaMessage(fromPhone, 'image', { link: product.image_url }, caption, setting);
                                         textToSave = caption;
@@ -765,26 +744,6 @@ router.post('/', async (req, res) => {
                                     } else {
                                         result = await sendTextMessage(fromPhone, caption, setting);
                                         textToSave = caption;
-                                    }
-                                } else if (botReply.type === 'catalog_link') {
-                                    interactionType = 'catalog_answer';
-                                    const interactivePayload = {
-                                        type: "catalog_message",
-                                        body: { text: botReply.text || "Here is our complete catalog!" },
-                                        action: {
-                                            name: "catalog_message"
-                                        }
-                                    };
-                                    try {
-                                        const { sendInteractiveMessage } = await import('../services/whatsapp.js');
-                                        result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
-                                        textToSave = botReply.text || "Here is our complete catalog!";
-                                        typeToSave = 'interactive';
-                                    } catch (metaErr) {
-                                        console.warn('[Webhook] Meta API rejected catalog interactive message, falling back to text:', metaErr.message);
-                                        result = await sendTextMessage(fromPhone, botReply.text || "Here is our complete catalog!", setting);
-                                        textToSave = botReply.text || "Here is our complete catalog!";
-                                        typeToSave = 'text';
                                     }
                                 }
 

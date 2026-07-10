@@ -6,7 +6,8 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
 const openai = new OpenAI({
     baseURL: 'https://api.deepseek.com/v1',
-    apiKey: DEEPSEEK_API_KEY || 'MISSING_KEY'
+    apiKey: DEEPSEEK_API_KEY || 'MISSING_KEY',
+    timeout: 5000 // Abort if DeepSeek takes longer than 5 seconds
 });
 
 export async function generateLLMReply(tenantId, messageBody, chatHistory = [], tenant = null) {
@@ -37,18 +38,15 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             contextText += "--- PRODUCTS IN STOCK ---\n";
             products.forEach(p => {
                 const desc = sanitizeProductDescriptionForCatalogue(p.description);
-                contextText += `Product ID: ${p._id}\nName: ${p.name}\nCategory: ${p.category || 'General'}\nPrice: ₹${p.selling_price || p.mrp}\nDescription: ${desc}\n\n`;
+                contextText += `Product: ${p.name}\nCategory: ${p.category || 'General'}\nPrice: ₹${p.selling_price || p.mrp}\nDescription: ${desc}\n\n`;
             });
         }
 
         contextText += "\nCRITICAL RULES:\n";
-        contextText += "1. LANGUAGE MATCHING: If the user writes in English, reply in English. If the user writes in Gujarati (whether using native script or Gujlish/Roman script like 'tamari shop kya che'), you MUST reply in native Gujarati script (e.g. 'અમારી દુકાન સુરતમાં આવેલી છે'). If the user writes in Hindi (whether native or Hinglish), you MUST reply in native Hindi script. NEVER reply in Romanized Gujlish or Hinglish.\n";
-        contextText += "2. You MUST respond in pure JSON format.\n";
-        contextText += `   - If answering a general question: { "type": "faq", "text": "Your complete, full-sentence answer in the correct language" }\n`;
-        contextText += `   - If the user asks about or wants to see a specific product: { "type": "product", "productId": "the_Product_ID_here", "text": "Here is the product you asked for!" } (You MUST use the exact Product ID, NOT the Name)\n`;
-        contextText += `   - If the user asks to see your catalog, all products, or a list of your items: { "type": "catalog_link", "text": "Here is our complete catalog!" }\n`;
-        contextText += "3. FULL & HELPFUL ANSWERS: Provide complete, polite, and helpful answers. Do NOT give one-word answers (like just 'Surat'). Formulate full, natural sentences based on the context.\n";
-        contextText += "4. NEVER invent prices, products, or policies not listed above.\n";
+        contextText += "1. STRICT LANGUAGE MATCHING: You MUST reply in the EXACT same language AND script that the user used in their last message. If they write in English, reply in English. If they write in Gujarati script, reply in Gujarati script. If they write in Hinglish or Gujlish (Roman script), reply in Roman script. Do NOT translate their language into the language of the FAQs.\n";
+        contextText += "2. Keep your answers brief, friendly, and formatted nicely for WhatsApp.\n";
+        contextText += "3. NEVER invent prices, products, or policies not listed above.\n";
+        contextText += "4. NEVER output JSON, code blocks, or any internal data structures. Respond ONLY with the raw text message that will be sent directly to the customer.\n";
 
         const messages = [
             { role: "system", content: contextText }
@@ -72,85 +70,32 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
             model: "deepseek-chat",
             messages: messages,
             max_tokens: 400,
-            temperature: 0.1, // Lower temp for strict JSON adherence
-            response_format: { type: "json_object" }
+            temperature: 0.2, // Low temp for factual accuracy
         });
 
-        const replyRaw = response.choices[0]?.message?.content?.trim();
+        let replyText = response.choices[0]?.message?.content?.trim();
         
-        if (!replyRaw) return null;
+        if (!replyText) return null;
 
-        // Robustly extract JSON from markdown if present
-        let jsonString = replyRaw;
-        const jsonMatch = replyRaw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-        if (jsonMatch && jsonMatch[1]) {
-            jsonString = jsonMatch[1].trim();
-        }
-
+        // Defensively parse in case the LLM hallucinates JSON despite instructions
         try {
-            const parsed = JSON.parse(jsonString);
-            
-            if (parsed.type === 'product' && parsed.productId) {
-                const searchId = String(parsed.productId).toLowerCase();
-                const p = products.find(prod => 
-                    (prod._id && prod._id.toString() === parsed.productId) || 
-                    (prod.id === parsed.productId) ||
-                    (prod.name && prod.name.toLowerCase().includes(searchId)) ||
-                    (prod.sku && prod.sku.toLowerCase() === searchId) ||
-                    (searchId.includes(prod.name?.toLowerCase()))
-                );
-                if (p) {
-                    return {
-                        type: 'product',
-                        data: p,
-                        text: parsed.text || "Here is the product:",
-                        confidence: 'high',
-                        band: 'high',
-                        _source: 'deepseek_llm'
-                    };
-                }
+            if (replyText.startsWith('{') && replyText.endsWith('}')) {
+                const parsed = JSON.parse(replyText);
+                if (parsed.text) replyText = parsed.text;
+                else if (parsed.answer) replyText = parsed.answer;
+                else if (parsed.message) replyText = parsed.message;
             }
-
-            if (parsed.type === 'catalog_link') {
-                return {
-                    type: 'catalog_link',
-                    text: parsed.text || "Here is our complete catalog!",
-                    confidence: 'high',
-                    band: 'high',
-                    _source: 'deepseek_llm'
-                };
-            }
-
-            return {
-                type: 'faq', 
-                text: parsed.text || replyRaw,
-                confidence: 'high',
-                band: 'high',
-                _source: 'deepseek_llm'
-            };
         } catch (e) {
-            console.error('[LLMResponder] Failed to parse JSON, falling back to raw text');
-            
-            // Safety net to prevent raw JSON from leaking to the customer if parse fails
-            let fallbackText = jsonString;
-            const textMatch = jsonString.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
-            if (textMatch && textMatch[1]) {
-                fallbackText = textMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
-            } else {
-                // Strip JSON braces if it looks like an object
-                if (fallbackText.startsWith('{') && fallbackText.endsWith('}')) {
-                    fallbackText = "I found the product, please check our catalog!";
-                }
-            }
-
-            return {
-                type: 'faq',
-                text: fallbackText,
-                confidence: 'high',
-                band: 'high',
-                _source: 'deepseek_llm'
-            };
+            // Not JSON, ignore
         }
+
+        return {
+            type: 'faq', // We return as 'faq' type so the main loop sends it directly
+            text: replyText,
+            confidence: 'high',
+            band: 'high',
+            _source: 'deepseek_llm'
+        };
 
     } catch (error) {
         console.error('[LLMResponder] DeepSeek API Error:', error);
