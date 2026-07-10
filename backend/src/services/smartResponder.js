@@ -240,12 +240,24 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
     }
 
     // Intercept catalogue requests to show the native WhatsApp Catalog Button
-    const catalogKeywords = ['catalog', 'catalogue', 'menu', 'products list', 'product list', 'show catalogue', 'show catalog', 'view catalogue'];
+    const catalogKeywords = ['catalog', 'catalogue', 'menu', 'products list', 'product list', 'show catalogue', 'show catalog', 'view catalogue', 'કૅટેલોગ', 'કેટેલોગ', 'મેનુ', 'कैटलॉग', 'मेनू'];
     const isCatalogRequest = catalogKeywords.some(kw => lowerBody.includes(kw));
     if (isCatalogRequest && botSettings.whatsapp_catalog_id) {
+        // Detect language from current message or last message in history
+        const contextStr = messageBody + ' ' + (chatHistory.length > 0 ? chatHistory[chatHistory.length - 1].body : '');
+        const isGujarati = /[\u0A80-\u0AFF]/.test(contextStr);
+        const isHindi = /[\u0900-\u097F]/.test(contextStr);
+        
+        let catalogText = "To view our full catalog, please visit our WhatsApp Catalog below. Our team will help you choose the best products for your needs.";
+        if (isGujarati) {
+            catalogText = "અમારો સંપૂર્ણ કેટલોગ જોવા માટે, કૃપા કરીને અમારા WhatsApp કેટલોગની મુલાકાત લો. અમારી ટીમ તમારી જરૂરિયાત મુજબ શ્રેષ્ઠ ઉત્પાદન પસંદ કરવામાં મદદ કરશે.";
+        } else if (isHindi) {
+            catalogText = "हमारी पूरी कैटलॉग देखने के लिए, कृपया हमारे WhatsApp कैटलॉग पर जाएं। हमारी टीम आपको आपकी आवश्यकता के अनुसार बेहतरीन उत्पाद चुनने में मदद करेगी।";
+        }
+
         return {
             type: 'catalog_message',
-            text: `અમારો સંપૂર્ણ કેટલોગ જોવા માટે, કૃપા કરીને અમારા WhatsApp કેટલોગની મુલાકાત લો. અમારી ટીમ તમારી જરૂરિયાત મુજબ શ્રેષ્ઠ ઉત્પાદન પસંદ કરવામાં મદદ કરશે.`,
+            text: catalogText,
             band: 'high'
         };
     }

@@ -10,7 +10,7 @@
 1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts if it's too slow. (Note: Fallback to local vector retrieval has since been completely removed as per user request to use fully DeepSeek).
 2. The LLM was occasionally hallucinating JSON structures (e.g. `{"type": "faq", "text": "..."}`) and sending literal JSON to customers on WhatsApp. We now explicitly forbid it in the prompt and defensively parse the raw response just in case.
 3. Added interactive native WhatsApp buttons for language selection. When a user first greets the bot (e.g., "hii"), it now intercepts the greeting in `smartResponder.js` and sends a 3-button payload (English, Gujarati, Hindi) via `webhook.js` before invoking DeepSeek. The new System Prompt acts as a secondary fallback if the button isn't triggered.
-4. Users requesting the "catalog" directly are now served the rich WhatsApp native catalog component instead of a raw text list, improving conversion rates.
+4. Users requesting the "catalog" directly are now served the rich WhatsApp native catalog component instead of a raw text list, improving conversion rates. The catalog button's body text also dynamically matches the conversation language (English, Gujarati, or Hindi) based on unicode script detection.
 **Files Changed**:
 - `backend/src/services/llmResponder.js`
 
