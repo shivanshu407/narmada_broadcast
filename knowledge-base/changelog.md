@@ -3,7 +3,7 @@
 ## 2026-07-10 — Hardened DeepSeek LLM Responder (Timeout & JSON Parsing)
 **What**: Added a strict 5000ms timeout to the OpenAI client inside `llmResponder.js`. Added explicit prompt instructions forbidding JSON output, and added a defensive JSON parser for `replyText`.
 **Why**: 
-1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts and falls back to local vector retrieval if it's too slow.
+1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts if it's too slow. (Note: Fallback to local vector retrieval has since been completely removed as per user request to use fully DeepSeek).
 2. The LLM was occasionally hallucinating JSON structures (e.g. `{"type": "faq", "text": "..."}`) and sending literal JSON to customers on WhatsApp. We now explicitly forbid it in the prompt and defensively parse the raw response just in case.
 **Files Changed**:
 - `backend/src/services/llmResponder.js`

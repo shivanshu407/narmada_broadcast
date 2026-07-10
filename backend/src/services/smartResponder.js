@@ -242,20 +242,6 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
         console.error('[SmartResponder] DeepSeek LLM failed, falling back to local retrieval:', err.message);
     }
 
-    if (flagEnabled(botSettings, 'retrieval_v2')) {
-        try {
-            const { retrieveAnswer } = await import('./retrievalEngine.js');
-            retrievalReply = await applySmartFlowSlots(await retrieveAnswer(tenantId, messageBody, botSettings), context, botSettings);
-        } catch (err) {
-            console.error('[SmartResponder] retrieval_v2 failed, falling back to legacy:', err.message);
-            if (context.debugTest) return { type: 'debug_error', message: err.message, stack: err.stack };
-        }
-    }
-
-    if (retrievalReply && retrievalReply.band === 'high') {
-        return retrievalReply;
-    }
-
     if (flagEnabled(botSettings, 'smart_flows')) {
         try {
             const { handleSmartFlow } = await import('./smartFlows.js');
@@ -274,14 +260,13 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
                 return flowReply;
             }
         } catch (err) {
-            console.error('[SmartResponder] smart_flows failed, falling back to retrieval:', err.message);
+            console.error('[SmartResponder] smart_flows failed:', err.message);
         }
     }
 
-    if (retrievalReply) return retrievalReply;
-
-    const legacyReply = await applySmartFlowSlots(await handleSmartReplyLegacy(tenantId, messageBody, chatHistory, botSettings), context, botSettings);
-    return legacyReply || deferredFlowReply;
+    // Per user request, manual FAQ fallbacks (retrieval_v2 & legacy) have been removed.
+    // The bot now strictly relies on DeepSeek.
+    return deferredFlowReply;
 }
 
 async function handleSmartReplyLegacy(tenantId, messageBody, chatHistory = [], botSettings = {}) {
