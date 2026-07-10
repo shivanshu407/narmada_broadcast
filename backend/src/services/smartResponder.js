@@ -243,8 +243,8 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
     const catalogKeywords = ['catalog', 'catalogue', 'menu', 'products list', 'product list', 'show catalogue', 'show catalog', 'view catalogue', 'કૅટેલોગ', 'કેટેલોગ', 'મેનુ', 'कैटलॉग', 'मेनू'];
     const isCatalogRequest = catalogKeywords.some(kw => lowerBody.includes(kw));
     if (isCatalogRequest && context.tenant?.whatsapp_catalog_id) {
-        // Detect language from current message or last message in history
-        const contextStr = messageBody + ' ' + (chatHistory.length > 0 ? chatHistory[chatHistory.length - 1].body : '');
+        // Detect language from current message or recent chat history
+        const contextStr = messageBody + ' ' + chatHistory.map(m => m.body || '').join(' ');
         const isGujarati = /[\u0A80-\u0AFF]/.test(contextStr);
         const isHindi = /[\u0900-\u097F]/.test(contextStr);
         
