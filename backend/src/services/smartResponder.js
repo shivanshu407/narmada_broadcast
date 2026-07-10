@@ -228,6 +228,17 @@ function isDeferredFlowReply(reply) {
 export async function handleSmartReply(tenantId, messageBody, chatHistory = [], botSettings = {}, context = {}) {
     if (!messageBody || messageBody.trim() === '') return null;
 
+    // Intercept simple greetings to show a native WhatsApp language selection button
+    const lowerBody = messageBody.trim().toLowerCase();
+    const isGreeting = ['hi', 'hello', 'hey', 'hii', 'hiii', 'namaste', 'kem cho', 'kem cho?', 'menu'].includes(lowerBody);
+    if (isGreeting && (!chatHistory || chatHistory.length === 0)) {
+        return {
+            type: 'language_selection',
+            text: `Welcome to ${context.tenant?.name || 'Narmada Essence'}! 🌸\n\nTo assist you better, please tap a button below to select your preferred language:`,
+            band: 'high'
+        };
+    }
+
     let retrievalReply = null;
     let deferredFlowReply = null;
     
