@@ -762,6 +762,19 @@ router.post('/', async (req, res) => {
                                     result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
                                     textToSave = botReply.text || "Welcome! Please select your preferred language:";
                                     typeToSave = 'interactive';
+                                } else if (botReply.type === 'catalog_message') {
+                                    interactionType = 'catalog_message';
+                                    const interactivePayload = {
+                                        type: "catalog_message",
+                                        body: { text: botReply.text },
+                                        action: {
+                                            name: "catalog_message"
+                                        }
+                                    };
+                                    const { sendInteractiveMessage } = await import('../services/whatsapp.js');
+                                    result = await sendInteractiveMessage(fromPhone, interactivePayload, setting);
+                                    textToSave = botReply.text;
+                                    typeToSave = 'interactive';
                                 }
 
                                 if (result && result.messageId) {

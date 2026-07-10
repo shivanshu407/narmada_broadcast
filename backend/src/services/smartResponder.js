@@ -239,6 +239,17 @@ export async function handleSmartReply(tenantId, messageBody, chatHistory = [], 
         };
     }
 
+    // Intercept catalogue requests to show the native WhatsApp Catalog Button
+    const catalogKeywords = ['catalog', 'catalogue', 'menu', 'products list', 'product list', 'show catalogue', 'show catalog', 'view catalogue'];
+    const isCatalogRequest = catalogKeywords.some(kw => lowerBody.includes(kw));
+    if (isCatalogRequest && botSettings.whatsapp_catalog_id) {
+        return {
+            type: 'catalog_message',
+            text: `અમારો સંપૂર્ણ કેટલોગ જોવા માટે, કૃપા કરીને અમારા WhatsApp કેટલોગની મુલાકાત લો. અમારી ટીમ તમારી જરૂરિયાત મુજબ શ્રેષ્ઠ ઉત્પાદન પસંદ કરવામાં મદદ કરશે.`,
+            band: 'high'
+        };
+    }
+
     let retrievalReply = null;
     let deferredFlowReply = null;
     
