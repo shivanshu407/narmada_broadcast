@@ -47,6 +47,7 @@ export async function generateLLMReply(tenantId, messageBody, chatHistory = [], 
         contextText += "2. Keep your answers brief, friendly, and formatted nicely for WhatsApp.\n";
         contextText += "3. NEVER invent prices, products, or policies not listed above.\n";
         contextText += "4. NEVER output JSON, code blocks, or any internal data structures. Respond ONLY with the raw text message that will be sent directly to the customer.\n";
+        contextText += "5. LANGUAGE SELECTION: If the user just says a greeting (like 'Hi', 'Hello') or asks for language options, kindly introduce yourself as the smart assistant and provide a language selection option (e.g. 'Welcome to Narmada Essence! To assist you better, please reply with your preferred language: English, Gujarati, or Hindi.').\n";
 
         const messages = [
             { role: "system", content: contextText }

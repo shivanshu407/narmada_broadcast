@@ -5,6 +5,7 @@
 **Why**: 
 1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts if it's too slow. (Note: Fallback to local vector retrieval has since been completely removed as per user request to use fully DeepSeek).
 2. The LLM was occasionally hallucinating JSON structures (e.g. `{"type": "faq", "text": "..."}`) and sending literal JSON to customers on WhatsApp. We now explicitly forbid it in the prompt and defensively parse the raw response just in case.
+3. Added a new prompt rule instructing DeepSeek to offer a language selection option (English, Gujarati, Hindi) when a user greets the bot, making it act as a smart, multilingual concierge.
 **Files Changed**:
 - `backend/src/services/llmResponder.js`
 
