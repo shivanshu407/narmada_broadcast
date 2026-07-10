@@ -1,11 +1,14 @@
 # Changelog
 
 ## 2026-07-10 — Hardened DeepSeek LLM Responder (Timeout & JSON Parsing)
-**What**: Added a strict 5000ms timeout to the OpenAI client inside `llmResponder.js`. Added explicit prompt instructions forbidding JSON output, and added a defensive JSON parser for `replyText`.
+**What**: 
+- Added a strict 5000ms timeout to the OpenAI client inside `llmResponder.js`. 
+- Added explicit prompt instructions forbidding JSON output, and added a defensive JSON parser for `replyText`.
+- Replaced the basic context string in `llmResponder.js` with a comprehensive System Prompt that enforces strict formatting for product queries (Name, Price, Image, etc.), restricts hallucinations, and manages language switching gracefully.
 **Why**: 
 1. DeepSeek API responses were occasionally taking too long, which stalled the entire WhatsApp webhook. The 5000ms timeout ensures it aborts if it's too slow. (Note: Fallback to local vector retrieval has since been completely removed as per user request to use fully DeepSeek).
 2. The LLM was occasionally hallucinating JSON structures (e.g. `{"type": "faq", "text": "..."}`) and sending literal JSON to customers on WhatsApp. We now explicitly forbid it in the prompt and defensively parse the raw response just in case.
-3. Added interactive native WhatsApp buttons for language selection. When a user first greets the bot (e.g., "hii"), it now intercepts the greeting in `smartResponder.js` and sends a 3-button payload (English, Gujarati, Hindi) via `webhook.js` before invoking DeepSeek.
+3. Added interactive native WhatsApp buttons for language selection. When a user first greets the bot (e.g., "hii"), it now intercepts the greeting in `smartResponder.js` and sends a 3-button payload (English, Gujarati, Hindi) via `webhook.js` before invoking DeepSeek. The new System Prompt acts as a secondary fallback if the button isn't triggered.
 **Files Changed**:
 - `backend/src/services/llmResponder.js`
 
